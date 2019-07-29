@@ -56,9 +56,9 @@ class PhysicsInformedNN:
         self.U0_pred = self.net_U0(self.x0_tf) # N x (q+1)
         self.U1_pred, self.U1_x_pred= self.net_U1(self.x1_tf) # N1 x (q+1)
         
-        self.loss = tf.norm((self.u0_tf - self.U0_pred), 1) + \
-                    tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]),1) + \
-                    tf.norm((self.U1_x_pred[0,:] - self.U1_x_pred[1,:]),1)                     
+        self.loss = tf.pow(tf.norm((self.u0_tf - self.U0_pred), 2), 2) + \
+                    tf.pow(tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]), 2), 2) + \
+                    tf.pow(tf.norm((self.U1_x_pred[0,:] - self.U1_x_pred[1,:]), 2),2)                     
         
         self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss, 
                                                                 method = 'L-BFGS-B', 
@@ -219,13 +219,13 @@ if __name__ == "__main__":
     fig.colorbar(h, cax=cax)
         
     line = np.linspace(x.min(), x.max(), 2)[:,None]
-    ax.plot(t[idx_t0]*np.ones((2,1)), line, 'w-', linewidth = 1)
-    ax.plot(t[idx_t1]*np.ones((2,1)), line, 'w-', linewidth = 1)
+    ax.plot(t[idx_t0]*np.ones((2,1)), line, 'w-', linewidth = 1, label='something')
+    ax.plot(t[idx_t1]*np.ones((2,1)), line, 'w-', linewidth = 1, label='something else')
     
     ax.set_xlabel('$t$')
     ax.set_ylabel('$x$')
     leg = ax.legend(frameon=False, loc = 'best')
-    ax.set_title('$u(t,x)$', fontsize = 10)
+    ax.set_title('$L_2^2$', fontsize = 10)
     
     
     ####### Row 1: h(t,x) slices ##################    
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     ax.legend(loc='upper center', bbox_to_anchor=(0.1, -0.3), ncol=2, frameon=False)
     
     # savefig('./figures/AC')  
-    
+    plt.show()
 
     
     
