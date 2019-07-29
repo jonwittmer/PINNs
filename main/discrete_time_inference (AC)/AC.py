@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 @author: Maziar Raissi
 """
@@ -55,9 +56,9 @@ class PhysicsInformedNN:
         self.U0_pred = self.net_U0(self.x0_tf) # N x (q+1)
         self.U1_pred, self.U1_x_pred= self.net_U1(self.x1_tf) # N1 x (q+1)
         
-        self.loss = tf.reduce_sum(tf.square(self.u0_tf - self.U0_pred)) + \
-                    tf.reduce_sum(tf.square(self.U1_pred[0,:] - self.U1_pred[1,:])) + \
-                    tf.reduce_sum(tf.square(self.U1_x_pred[0,:] - self.U1_x_pred[1,:]))                     
+        self.loss = tf.norm((self.u0_tf - self.U0_pred), 1) + \
+                    tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]),1) + \
+                    tf.norm((self.U1_x_pred[0,:] - self.U1_x_pred[1,:]),1)                     
         
         self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss, 
                                                                 method = 'L-BFGS-B', 
