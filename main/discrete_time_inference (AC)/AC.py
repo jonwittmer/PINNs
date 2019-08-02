@@ -46,6 +46,7 @@ class PhysicsInformedNN:
         # tf placeholders and graph
         self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
                                                      log_device_placement=True))
+
         
         self.x0_tf = tf.placeholder(tf.float32, shape=(None, self.x0.shape[1]))
         self.x1_tf = tf.placeholder(tf.float32, shape=(None, self.x1.shape[1]))
@@ -55,10 +56,13 @@ class PhysicsInformedNN:
         
         self.U0_pred = self.net_U0(self.x0_tf) # N x (q+1)
         self.U1_pred, self.U1_x_pred= self.net_U1(self.x1_tf) # N1 x (q+1)
+
+        # regularization parameter
+        self.gamma = tf.constant(5.)
         
         self.loss = tf.pow(tf.norm((self.u0_tf - self.U0_pred), 2), 2) + \
-                    tf.pow(tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]), 2), 2) + \
-                    tf.pow(tf.norm((self.U1_x_pred[0,:] - self.U1_x_pred[1,:]), 2),2)                     
+                    self.gamma * tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]), 1) + \
+                    self.gamma * tf.norm((self.U1_x_pred[0,:] - self.U1_x_pred[1,:]), 1)                     
         
         self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss, 
                                                                 method = 'L-BFGS-B', 
@@ -98,7 +102,8 @@ class PhysicsInformedNN:
         for l in range(0,num_layers-2):
             W = weights[l]
             b = biases[l]
-            H = tf.tanh(tf.add(tf.matmul(H, W), b))
+            #H = tf.tanh(tf.add(tf.matmul(H, W), b))
+            H = tf.nn.relu(tf.add(tf.matmul(H,W), b))
         W = weights[-1]
         b = biases[-1]
         Y = tf.add(tf.matmul(H, W), b)
@@ -139,7 +144,7 @@ class PhysicsInformedNN:
             self.sess.run(self.train_op_Adam, tf_dict)
             
             # Print
-            if it % 10 == 0:
+            if it % 100 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
                 print('It: %d, Loss: %.3e, Time: %.2f' % 
@@ -151,6 +156,8 @@ class PhysicsInformedNN:
                                 fetches = [self.loss],
                                 loss_callback = self.callback)
     
+    
+
     def predict(self, x_star):
         
         U1_star = self.sess.run(self.U1_pred, {self.x1_tf: x_star})
@@ -192,8 +199,9 @@ if __name__ == "__main__":
     x_star = x
 
     model = PhysicsInformedNN(x0, u0, x1, layers, dt, lb, ub, q)
+    #model.train(10000)
     model.train(10000)
-    
+
     U1_pred = model.predict(x_star)
 
     error = np.linalg.norm(U1_pred[:,-1] - Exact[idx_t1,:], 2)/np.linalg.norm(Exact[idx_t1,:], 2)
@@ -204,6 +212,7 @@ if __name__ == "__main__":
     ######################################################################    
 
     fig, ax = newfig(1.0, 1.2)
+    fig, ax = plt.subplots(figsize=(12,12))
     ax.axis('off')
     
     ####### Row 0: h(t,x) ##################    
@@ -211,7 +220,8 @@ if __name__ == "__main__":
     gs0.update(top=1-0.06, bottom=1-1/2 + 0.1, left=0.15, right=0.85, wspace=0)
     ax = plt.subplot(gs0[:, :])
     
-    h = ax.imshow(Exact.T, interpolation='nearest', cmap='seismic', 
+    #    h = ax.imshow(Exact.T, interpolation='nearest', cmap='seismic', 
+    h = ax.imshow(U1_pred, interpolation='nearest', cmap='seismic', 
                   extent=[t.min(), t.max(), x_star.min(), x_star.max()], 
                   origin='lower', aspect='auto')
     divider = make_axes_locatable(ax)
@@ -229,6 +239,7 @@ if __name__ == "__main__":
     
     
     ####### Row 1: h(t,x) slices ##################    
+    
     gs1 = gridspec.GridSpec(1, 2)
     gs1.update(top=1-1/2-0.05, bottom=0.15, left=0.15, right=0.85, wspace=0.5)
     
@@ -252,27 +263,4 @@ if __name__ == "__main__":
     
     ax.legend(loc='upper center', bbox_to_anchor=(0.1, -0.3), ncol=2, frameon=False)
     
-    # savefig('./figures/AC')  
-    plt.show()
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    plt.savefig('./figures/Regularization/Relu/AC_L1_reg_05_default.png')  
