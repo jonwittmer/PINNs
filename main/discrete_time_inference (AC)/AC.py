@@ -58,7 +58,7 @@ class PhysicsInformedNN:
         self.U1_pred, self.U1_x_pred= self.net_U1(self.x1_tf) # N1 x (q+1)
 
         # regularization parameter
-        self.gamma = tf.constant(5.)
+        self.gamma = tf.constant(10.)
         
         self.loss = tf.pow(tf.norm((self.u0_tf - self.U0_pred), 2), 2) + \
                     self.gamma * tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]), 1) + \
@@ -103,7 +103,7 @@ class PhysicsInformedNN:
             W = weights[l]
             b = biases[l]
             #H = tf.tanh(tf.add(tf.matmul(H, W), b))
-            H = tf.nn.relu(tf.add(tf.matmul(H,W), b))
+            H = tf.nn.elu(tf.add(tf.matmul(H,W), b))
         W = weights[-1]
         b = biases[-1]
         Y = tf.add(tf.matmul(H, W), b)
@@ -122,6 +122,10 @@ class PhysicsInformedNN:
         U = U1[:,:-1]
         U_x = self.fwd_gradients_0(U, x)
         U_xx = self.fwd_gradients_0(U_x, x)
+        print('Nets')
+        print(U_xx)
+        print(U_x)
+        print(U)
         F = 5.0*U - 5.0*U**3 + 0.0001*U_xx
         U0 = U1 - self.dt*tf.matmul(F, self.IRK_weights.T)
         return U0
@@ -200,7 +204,7 @@ if __name__ == "__main__":
 
     model = PhysicsInformedNN(x0, u0, x1, layers, dt, lb, ub, q)
     #model.train(10000)
-    model.train(10000)
+    model.train(100000)
 
     U1_pred = model.predict(x_star)
 
@@ -243,9 +247,12 @@ if __name__ == "__main__":
     gs1 = gridspec.GridSpec(1, 2)
     gs1.update(top=1-1/2-0.05, bottom=0.15, left=0.15, right=0.85, wspace=0.5)
     
+    print('Idx_t0: %s' % idx_t0)
+
     ax = plt.subplot(gs1[0, 0])
     ax.plot(x,Exact[idx_t0,:], 'b-', linewidth = 2) 
-    ax.plot(x0, u0, 'rx', linewidth = 2, label = 'Data')      
+    ax.plot(x0, u0, 'rx', linewidth = 2, label = 'Data')
+    ax.plot(x_star, U1_pred[:,idx_t0], 'r--',label = 'Prediction')
     ax.set_xlabel('$x$')
     ax.set_ylabel('$u(t,x)$')    
     ax.set_title('$t = %.2f$' % (t[idx_t0]), fontsize = 10)
@@ -263,4 +270,4 @@ if __name__ == "__main__":
     
     ax.legend(loc='upper center', bbox_to_anchor=(0.1, -0.3), ncol=2, frameon=False)
     
-    plt.savefig('./figures/Regularization/Relu/AC_L1_reg_05_default.png')  
+    plt.savefig('./figures/Regularization/Elu/AC_L1_reg_10_default.png')  
