@@ -45,7 +45,9 @@ class PhysicsInformedNN:
         
         # tf placeholders and graph
         self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                                     log_device_placement=True))
+                                                     log_device_placement=True,
+                                                     intra_op_parallelism_threads=1,
+                                                     inter_op_parallelism_threads=2))
 
         
         self.x0_tf = tf.placeholder(tf.float32, shape=(None, self.x0.shape[1]))
@@ -58,16 +60,16 @@ class PhysicsInformedNN:
         self.U1_pred, self.U1_x_pred= self.net_U1(self.x1_tf) # N1 x (q+1)
 
         # regularization parameter
-        self.gamma = tf.constant(10.)
+        self.gamma = tf.constant(1.)
         
-        self.loss = tf.pow(tf.norm((self.u0_tf - self.U0_pred), 2), 2) + \
-                    self.gamma * tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]), 1) + \
-                    self.gamma * tf.norm((self.U1_x_pred[0,:] - self.U1_x_pred[1,:]), 1)                     
+        self.loss = 1 / self.gamma * tf.pow(tf.norm((self.u0_tf - self.U0_pred), 2), 2) + \
+                    tf.pow(tf.norm((self.U1_pred[0,:] - self.U1_pred[1,:]), 2), 2) + \
+                    tf.pow(tf.norm((self.U1_x_pred[0,:] - self.U1_x_pred[1,:]), 2), 2)                     
         
         self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss, 
                                                                 method = 'L-BFGS-B', 
-                                                                options = {'maxiter': 50000,
-                                                                           'maxfun': 50000,
+                                                                options = {'maxiter': 500000,
+                                                                           'maxfun': 500000,
                                                                            'maxcor': 50,
                                                                            'maxls': 50,
                                                                            'ftol' : 1.0 * np.finfo(float).eps})
@@ -102,8 +104,8 @@ class PhysicsInformedNN:
         for l in range(0,num_layers-2):
             W = weights[l]
             b = biases[l]
-            #H = tf.tanh(tf.add(tf.matmul(H, W), b))
-            H = tf.nn.elu(tf.add(tf.matmul(H,W), b))
+            H = tf.tanh(tf.add(tf.matmul(H, W), b))
+            #H = tf.nn.elu(tf.add(tf.matmul(H,W), b))
         W = weights[-1]
         b = biases[-1]
         Y = tf.add(tf.matmul(H, W), b)
@@ -252,10 +254,10 @@ if __name__ == "__main__":
     ax = plt.subplot(gs1[0, 0])
     ax.plot(x,Exact[idx_t0,:], 'b-', linewidth = 2) 
     ax.plot(x0, u0, 'rx', linewidth = 2, label = 'Data')
-    ax.plot(x_star, U1_pred[:,idx_t0], 'r--',label = 'Prediction')
+    ax.plot(x_star, U1_pred[:,0], 'r--',label = 'Prediction')
     ax.set_xlabel('$x$')
     ax.set_ylabel('$u(t,x)$')    
-    ax.set_title('$t = %.2f$' % (t[idx_t0]), fontsize = 10)
+    ax.set_title('$t = 0$' , fontsize = 10)
     ax.set_xlim([lb-0.1, ub+0.1])
     ax.legend(loc='upper center', bbox_to_anchor=(0.8, -0.3), ncol=2, frameon=False)
 
@@ -270,4 +272,7 @@ if __name__ == "__main__":
     
     ax.legend(loc='upper center', bbox_to_anchor=(0.1, -0.3), ncol=2, frameon=False)
     
-    plt.savefig('./figures/Regularization/Elu/AC_L1_reg_10_default.png')  
+    filename = 'L2_invreg_01_train_010.png'
+
+    plt.savefig('./figures/Regularization/Tanh/' + filename)  
+    print('Results saved to: ' + filename)
