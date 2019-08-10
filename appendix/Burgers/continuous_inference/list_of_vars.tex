@@ -1,0 +1,87 @@
+\documentclass[10pt]{article}
+\usepackage{amsfonts,amssymb,amsmath,amsthm,ifthen}
+
+\setlength{\textwidth}{175mm}
+\setlength{\textheight}{255mm}
+\setlength{\topmargin}{-20mm}
+\setlength{\oddsidemargin}{-7mm}
+\setlength{\evensidemargin}{-7mm}
+\pagestyle{empty}
+
+%Packages
+
+\usepackage{graphicx}
+
+\title{List of Variables for Burgers Continuous Inference}
+\author{Jonathan Wittmer}
+\date{August 2019}
+
+\begin{document}
+
+\maketitle
+
+%----------------------------------------------------------
+\section{Class Variables}
+%----------------------------------------------------------
+\subsection{Class Initializers}
+\begin{itemize}
+	\item \textbf{self}: Python required member. This is implicitly passes to all class functions as the first argument.
+	\item \textbf{X\_u}: 
+	\item \textbf{u}:
+	\item \textbf{X\_f}:
+	\item \textbf{layers}: A list containing the dimensions of each layer in the network. The first element in the vector is the input layer, the last is the output layer. 
+	\item \textbf{lb}: Lower bound
+	\item \textbf{ub}: Upper bound
+	\item \textbf{nu}:
+\end{itemize}
+
+
+\subsection{Basic Class Members}
+
+\begin{itemize}
+	\item \textbf{lb}: Lower bound
+	\item \textbf{ub}: Upper bound
+	\item \textbf{x\_u}: 
+	\item \textbf{t\_u}:
+	\item \textbf{x\_f}:
+	\item \textbf{t\_f}:
+	\item \textbf{u}:
+	\item \textbf{layers}:
+	\item \textbf{nu}:
+		
+\end{itemize}
+
+
+\subsection{Tensorflow Class Members}
+
+\begin{itemize}
+	\item \textbf{weights}:
+	\item \textbf{biases}:
+	\item \textbf{sess}:
+	\item \textbf{x\_u\_tf}:
+	\item \textbf{t\_u\_tf}:
+	\item \textbf{u\_tf}:
+	\item \textbf{x\_f\_tf}:
+	\item \textbf{t\_f\_tf}:
+	\item \textbf{u\_pred}:
+	\item \textbf{f\_pred}:
+	\item \textbf{loss}:
+	\item \textbf{optimizer}:
+	\item \textbf{init}: 
+\end{itemize}	
+	
+	
+	
+	
+	
+	
+%---------------------------------------------------------------
+%:                  BACK MATTER:  Bibliography
+% --------------------------------------------------------------
+\nocite{*}
+\bibliography{References}{}
+\bibliographystyle{IEEEtran}
+%---------------------------------------------------------------
+%        END: Bibliography
+%---------------------------------------------------------------
+\end{document}
