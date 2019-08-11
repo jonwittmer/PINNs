@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 @author: Maziar Raissi
 """
@@ -7,7 +8,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.io
 from scipy.interpolate import griddata
-from plotting import newfig, savefig
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.gridspec as gridspec
 import time
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     ############################# Plotting ###############################
     ######################################################################
     
-    fig, ax = newfig(1.0, 1.4)
+    fig, ax = plt.subplots(1.0, 1.4)
     ax.axis('off')
     
     ####### Row 0: u(t,x) ##################
