@@ -205,7 +205,7 @@ if __name__ == "__main__":
     u_train = u_train + noise * np.std(u_train) * np.random.randn(u_train.shape[0], u_train.shape[1])
         
     model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub)
-    model.train(10000)
+    model.train(100)
     
     u_pred, f_pred = model.predict(X_star)
         
@@ -222,6 +222,8 @@ if __name__ == "__main__":
     ######################################################################
     ############################# Plotting ###############################
     ######################################################################
+
+    plt.rc('text', usetex=True)
     
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.axis('off')
@@ -299,4 +301,4 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
         
-    # savefig('./figures/Burgers_identification')
+    plt.show()
