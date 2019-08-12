@@ -35,7 +35,7 @@ class PhysicsInformedNN:
         self.u = u_data
 
         # break up physics terms. If no physics terms are provides, default to using the data
-        if X_phys == 0:
+        if len(X_phys) == 0:
             self.x_phys = X_data[:, 0:1]
             self.t_phys = X_data[:, 1:2]
         else:
@@ -61,8 +61,8 @@ class PhysicsInformedNN:
         self.sess = tf.Session(config=self.config)
         
         # Initialize PDE parameters
-        self.lambda_1 = tf.Variable([1.0], dtype=tf.float32)
-        self.lambda_2 = tf.Variable([-0.0031831], dtype=tf.float32)
+        self.lambda_1 = tf.Variable([1.0], dtype=tf.float32, trainable=False)
+        self.lambda_2 = tf.Variable([-0.0031831], dtype=tf.float32, trainable=False)
         
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
@@ -78,9 +78,9 @@ class PhysicsInformedNN:
         self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
 
         # initialize the ADMM variables - just lists here as tensorflow isn't training them
-        self.z = tf.Variable(tf.ones([self.N_r, 1]), dtype=tf.float32)
-        self.gamma = tf.Variable(tf.ones([self.N_r, 1]), dtype=tf.float32)
-        self.rho = tf.constant(10.0)
+        self.z = tf.Variable(tf.ones([self.N_r, 1]), dtype=tf.float32, trainable=False)
+        self.gamma = tf.Variable(tf.ones([self.N_r, 1]), dtype=tf.float32, trainable=False)
+        self.rho = tf.constant(0.5)
         self.c_gamma = 1 / (self.rho * self.N_r)
         #self.dummy_z = np.zeros((self.N_r, 1))
         self.zeros = tf.zeros((self.N_r, 1))
@@ -107,9 +107,9 @@ class PhysicsInformedNN:
                                                                            'ftol': 1.0 * np.finfo(float).eps})
         ''' 
         self.optimizer_Adam = tf.train.AdamOptimizer()
-        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss, 
-                                                          var_list=[self.weights, 
-                                                                    self.biases])
+        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss) 
+                                                          #var_list=[self.weights, 
+                                                          #          self.biases])
                                                                     #self.lambda_1,
                                                                     #self.lambda_2])
         
@@ -195,7 +195,7 @@ class PhysicsInformedNN:
             self.sess.run(self.gamma_update, tf_dict)
             
             # Print
-            if it % 100 == 0:
+            if it % 10 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
                 r_z = self.sess.run(self.admm_misfit, tf_dict)
@@ -224,6 +224,7 @@ if __name__ == "__main__":
     nu = 0.01 / np.pi
 
     N_u = 2000
+    N_r = 10000
     layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
     
     data = scipy.io.loadmat('../Data/burgers_shock.mat')
@@ -249,8 +250,9 @@ if __name__ == "__main__":
     idx = np.random.choice(X_star.shape[0], N_u, replace=False)
     X_u_train = X_star[idx, :]
     u_train = u_star[idx, :]
+    X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
-    model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub)
+    model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub, X_phys_train)
     model.train(10000)
     
     u_pred, f_pred = model.predict(X_star)
@@ -374,5 +376,5 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
     
-    plt.savefig('figures/ADMM_L1_rho_10.png', dpi=300)
+    plt.savefig('figures/ADMM_L1_rho_0_5.png', dpi=300)
     #plt.show()
