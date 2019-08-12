@@ -191,11 +191,13 @@ class PhysicsInformedNN:
         start_time = time.time()
         for it in range(nIter):
             self.sess.run(self.train_op_Adam, tf_dict)
-            self.sess.run(self.z_update, tf_dict)
-            self.sess.run(self.gamma_update, tf_dict)
+            #self.sess.run(self.z_update, tf_dict)
+            #self.sess.run(self.gamma_update, tf_dict)
             
             # Print
-            if it % 10 == 0:
+            if it % 100 == 0:
+                self.sess.run(self.z_update, tf_dict)
+                self.sess.run(self.gamma_update, tf_dict)
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
                 r_z = self.sess.run(self.admm_misfit, tf_dict)
@@ -253,7 +255,7 @@ if __name__ == "__main__":
     X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
     model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub, X_phys_train)
-    model.train(10000)
+    model.train(100000)
     
     u_pred, f_pred = model.predict(X_star)
             
@@ -263,7 +265,7 @@ if __name__ == "__main__":
         
     lambda_1_value = model.sess.run(model.lambda_1)
     lambda_2_value = model.sess.run(model.lambda_2)
-    lambda_2_value = np.exp(lambda_2_value)
+    #lambda_2_value = np.exp(lambda_2_value)
     
     error_lambda_1 = np.abs(lambda_1_value - 1.0) * 100
     error_lambda_2 = np.abs(lambda_2_value - nu) / nu * 100
@@ -376,5 +378,5 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
     
-    plt.savefig('figures/ADMM_L1_rho_0_5.png', dpi=300)
+    plt.savefig('figures/intermediate_ADMM_L1_long.png', dpi=300)
     #plt.show()
