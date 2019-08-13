@@ -24,7 +24,7 @@ tf.set_random_seed(1234)
 
 class PhysicsInformedNN:
     # Initialize the class
-    def __init__(self, X_data, u_data, layers, lb, ub, X_phys=0):
+    def __init__(self, X_data, u_data, layers, lb, ub, X_phys=[]):
         
         self.lb = lb
         self.ub = ub
@@ -55,7 +55,7 @@ class PhysicsInformedNN:
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
                                      intra_op_parallelism_threads=1,
-                                     inter_op_parallelism_threads=2)
+                                     inter_op_parallelism_threads=4)
         
         # tf placeholders and graph
         self.sess = tf.Session(config=self.config)
@@ -88,25 +88,24 @@ class PhysicsInformedNN:
 
         # ADMM loss term for training the weights - use backprop on this
         self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
-                    tf.pow(tf.matmul(tf.transpose(self.gamma), self.f_pred), 2) + \
+                    tf.matmul(tf.abs(tf.transpose(self.gamma)), tf.abs(self.f_pred)) + \
                     self.rho / 2 * tf.pow(tf.norm(self.f_pred - self.z, 2), 2)
         
         self.gamma_update = self.gamma.assign(self.gamma + self.rho * (self.f_pred - self.z))
         self.z_update = self.z.assign(self.compute_z())
         
         self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
-
+        self.tol = 0.0001
         '''
         self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
                                                                 method='L-BFGS-B',
-                                                                var_list=[self.weights, self.biases],
-                                                                options={'maxiter': 50000,
-                                                                           'maxfun': 50000,
+                                                                options={'maxiter': 100,
+                                                                           'maxfun': 100,
                                                                            'maxcor': 50,
                                                                            'maxls': 50,
-                                                                           'ftol': 1.0 * np.finfo(float).eps})
-        ''' 
-        self.optimizer_Adam = tf.train.AdamOptimizer()
+                                                                           'ftol': 100.0 * np.finfo(float).eps})
+        '''
+        self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam = self.optimizer_Adam.minimize(self.loss) 
                                                           #var_list=[self.weights, 
                                                           #          self.biases])
@@ -188,22 +187,44 @@ class PhysicsInformedNN:
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
-        start_time = time.time()
-        for it in range(nIter):
+        # warm start: don't update Lagrange multiplier
+        print('beginning warm start')
+        '''
+        for it in range(1000):
             self.sess.run(self.train_op_Adam, tf_dict)
-            #self.sess.run(self.z_update, tf_dict)
-            #self.sess.run(self.gamma_update, tf_dict)
             
-            # Print
+            # only update z every 100 iterations
+            # this lets Adam optimizer do a better job of minimizing 22a
             if it % 100 == 0:
                 self.sess.run(self.z_update, tf_dict)
+                print('    %s %% Finished' %str(it/1000*100))
+        '''
+        print('    %s %% Finished' %str(100))
+        print('Beginning regular ADMM iterations')
+
+        # main iterations: updating Lagrange multiplier
+        start_time = time.time()
+        #for it in range(nIter):
+        it = 0
+        loss_value = 1000
+        while it < nIter and abs(loss_value) > self.tol:
+            self.sess.run(self.train_op_Adam, tf_dict)
+            
+            # only update every 10 iterations
+            if it % 10 == 0:
+                self.sess.run(self.z_update, tf_dict)
                 self.sess.run(self.gamma_update, tf_dict)
+                    
+            # Print
+            if it % 100 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
                 r_z = self.sess.run(self.admm_misfit, tf_dict)
                 print('It: %d, Loss: %.3e, r(w) - z: %.3f ,Time: %.2f' %
                       (it, loss_value, r_z, elapsed))
                 start_time = time.time()
+            
+            it += 1
         '''
         self.optimizer.minimize(self.sess,
                                 feed_dict=tf_dict,
@@ -254,8 +275,8 @@ if __name__ == "__main__":
     u_train = u_star[idx, :]
     X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
-    model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub, X_phys_train)
-    model.train(100000)
+    model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub)#, X_phys_train)
+    model.train(1000000)
     
     u_pred, f_pred = model.predict(X_star)
             
@@ -378,5 +399,5 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
     
-    plt.savefig('figures/intermediate_ADMM_L1_long.png', dpi=300)
+    plt.savefig('figures/intermediate_ADMM_L1_GD_NoWS_10.png', dpi=300)
     #plt.show()
