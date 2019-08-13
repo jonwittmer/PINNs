@@ -5,6 +5,7 @@
 
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.io
 from scipy.interpolate import griddata
@@ -62,7 +63,7 @@ class PhysicsInformedNN:
         
         # Initialize PDE parameters
         self.lambda_1 = tf.Variable([1.0], dtype=tf.float32, trainable=False)
-        self.lambda_2 = tf.Variable([-0.0031831], dtype=tf.float32, trainable=False)
+        self.lambda_2 = tf.Variable([0.0031831], dtype=tf.float32, trainable=False)
         
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
@@ -82,7 +83,6 @@ class PhysicsInformedNN:
         self.gamma = tf.Variable(tf.ones([self.N_r, 1]), dtype=tf.float32, trainable=False)
         self.rho = tf.constant(0.5)
         self.c_gamma = 1 / (self.rho * self.N_r)
-        #self.dummy_z = np.zeros((self.N_r, 1))
         self.zeros = tf.zeros((self.N_r, 1))
         self.ones  = tf.ones((self.N_r, 1))
 
@@ -118,6 +118,8 @@ class PhysicsInformedNN:
         # assign the real initial value of z = r(w) 
         self.sess.run(self.z.assign(self.f_pred), 
                       feed_dict={self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys})
+
+        self.data_frame = pd.DataFrame()
 
     def initialize_NN(self, layers):
         weights = []
@@ -187,36 +189,22 @@ class PhysicsInformedNN:
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
-        # warm start: don't update Lagrange multiplier
-        print('beginning warm start')
-        '''
-        for it in range(1000):
-            self.sess.run(self.train_op_Adam, tf_dict)
-            
-            # only update z every 100 iterations
-            # this lets Adam optimizer do a better job of minimizing 22a
-            if it % 100 == 0:
-                self.sess.run(self.z_update, tf_dict)
-                print('    %s %% Finished' %str(it/1000*100))
-        '''
-        print('    %s %% Finished' %str(100))
-        print('Beginning regular ADMM iterations')
-
         # main iterations: updating Lagrange multiplier
+
         start_time = time.time()
-        #for it in range(nIter):
         it = 0
         loss_value = 1000
+
         while it < nIter and abs(loss_value) > self.tol:
             self.sess.run(self.train_op_Adam, tf_dict)
             
             # only update every 10 iterations
-            if it % 10 == 0:
+            if it % 1 == 0:
                 self.sess.run(self.z_update, tf_dict)
                 self.sess.run(self.gamma_update, tf_dict)
                     
-            # Print
-            if it % 100 == 0:
+            # print to monitor results
+            if it % 1000 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
                 r_z = self.sess.run(self.admm_misfit, tf_dict)
@@ -224,13 +212,12 @@ class PhysicsInformedNN:
                       (it, loss_value, r_z, elapsed))
                 start_time = time.time()
             
+            # save figure every so often so if it crashes, we have some results
+            if it % 10000 == 0:
+                self.plot_results()
+            
             it += 1
-        '''
-        self.optimizer.minimize(self.sess,
-                                feed_dict=tf_dict,
-                                fetches=[self.loss, self.lambda_1, self.lambda_2],
-                                loss_callback=self.callback)
-        '''
+
     def predict(self, X_star):
         
         tf_dict = {self.x_data_tf: X_star[:, 0:1], self.t_data_tf: X_star[:, 1:2],
@@ -240,6 +227,9 @@ class PhysicsInformedNN:
         f_star = self.sess.run(self.f_pred, tf_dict)
         
         return u_star, f_star
+        
+    def plot_results(self):
+        pass
 
     
 if __name__ == "__main__":
@@ -276,7 +266,7 @@ if __name__ == "__main__":
     X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
     model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub)#, X_phys_train)
-    model.train(1000000)
+    model.train(100000)
     
     u_pred, f_pred = model.predict(X_star)
             
@@ -399,5 +389,10 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
     
-    plt.savefig('figures/intermediate_ADMM_L1_GD_NoWS_10.png', dpi=300)
+    filename = 'figures/Correct/ADMM_Z_1.png'
+    print()
+    print('Figure saved to ' + filename)
+    print()
+
+    plt.savefig(filename, dpi=300)
     #plt.show()
