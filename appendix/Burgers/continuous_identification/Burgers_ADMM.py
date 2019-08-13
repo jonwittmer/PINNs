@@ -53,10 +53,12 @@ class PhysicsInformedNN:
         # Initialize training variables
         self.weights, self.biases = self.initialize_NN(layers)
         
+        self.gpu_options = tf.GPUOptions(visible_device_list='1')
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
                                      intra_op_parallelism_threads=1,
-                                     inter_op_parallelism_threads=4)
+                                     inter_op_parallelism_threads=4,
+                                     gpu_options=self.gpu_options)
         
         # tf placeholders and graph
         self.sess = tf.Session(config=self.config)
@@ -199,7 +201,7 @@ class PhysicsInformedNN:
             self.sess.run(self.train_op_Adam, tf_dict)
             
             # only update every 10 iterations
-            if it % 1 == 0:
+            if it % 100 == 0:
                 self.sess.run(self.z_update, tf_dict)
                 self.sess.run(self.gamma_update, tf_dict)
                     
@@ -266,7 +268,7 @@ if __name__ == "__main__":
     X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
     model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub)#, X_phys_train)
-    model.train(100000)
+    model.train(1000000)
     
     u_pred, f_pred = model.predict(X_star)
             
@@ -389,7 +391,7 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
     
-    filename = 'figures/Correct/ADMM_Z_1.png'
+    filename = 'figures/Correct/Train_1e6/ADMM_Z_100.png'
     print()
     print('Figure saved to ' + filename)
     print()
