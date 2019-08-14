@@ -54,8 +54,16 @@ class PhysicsInformedNN:
         self.weights, self.biases = self.initialize_NN(layers)
         
         #=== tf placeholders and Graph ===#
-        self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                                     log_device_placement=True)) # GPU related stuff
+        self.gpu_options = tf.GPUOptions(visible_device_list='2')
+
+        self.config = tf.ConfigProto(allow_soft_placement=True,
+                                     log_device_placement=True,
+                                     intra_op_parallelism_threads=1,
+                                     inter_op_parallelism_threads=4,
+                                     gpu_options=self.gpu_options)
+
+        
+        self.sess = tf.Session(config=self.config) # GPU related stuff
         
         #=== Initialize Data Variables ===#
         self.x_u_tf = tf.placeholder(tf.float32, shape=[None, self.x_u.shape[1]]) # By setting it as "None", it allows any size. This usually corresponds to the batch size which can vary
