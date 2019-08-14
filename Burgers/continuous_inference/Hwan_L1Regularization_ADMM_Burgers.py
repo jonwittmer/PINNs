@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 @author: Maziar Raissi
 Modified by Hwan Goh, Oden Institute of Computational Sciences and Engineering, 10/8/2019
