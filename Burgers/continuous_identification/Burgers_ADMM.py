@@ -52,11 +52,15 @@ class PhysicsInformedNN:
         
         # Initialize training variables
         self.weights, self.biases = self.initialize_NN(layers)
+
+        # set configuration options
+        self.gpu_options = tf.GPUOptions(visible_device_list='3')
         
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
                                      intra_op_parallelism_threads=1,
-                                     inter_op_parallelism_threads=4)
+                                     inter_op_parallelism_threads=4,
+                                     gpu_options=self.gpu_options)
         
         # tf placeholders and graph
         self.sess = tf.Session(config=self.config)
