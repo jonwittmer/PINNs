@@ -84,13 +84,10 @@ class PhysicsInformedNN:
                     tf.matmul(tf.transpose(self.lagrange), self.net_f(self.x_f_tf, self.t_f_tf)) +\
                     (self.rho/2)*tf.pow(tf.norm(self.f_pred - self.z,2),2)
                                    
-        self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss, 
-                                                                method = 'L-BFGS-B', 
-                                                                options = {'maxiter': 50000,
-                                                                           'maxfun': 50000,
-                                                                           'maxcor': 50,
-                                                                           'maxls': 50,
-                                                                           'ftol' : 1.0 * np.finfo(float).eps})
+        self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
+        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss) 
+        self.tol = 0.0001
+        
         self.lagrange = self.lagrange.assign(self.lagrange + self.rho * (self.f_pred - self.z))
         self.z_update = self.z.assign(self.soft_thresholding())
     
@@ -165,17 +162,33 @@ class PhysicsInformedNN:
     ############################
     #   Train Neural Network   #
     ############################ 
-    def train(self):        
+    def train(self,nIter):        
         tf_dict = {self.x_u_tf: self.x_u, self.t_u_tf: self.t_u, self.u_tf: self.u,
                    self.x_f_tf: self.x_f, self.t_f_tf: self.t_f}
                                                                                                                           
-        self.optimizer.minimize(self.sess, 
-                                feed_dict = tf_dict,         
-                                fetches = [self.loss], 
-                                loss_callback = self.callback)    
+        start_time = time.time()
+        #for it in range(nIter):
+        iter_counter = 0
+        loss_value = 1000
+        while iter_counter < nIter and abs(loss_value) > self.tol:
+            self.sess.run(self.train_op_Adam, tf_dict)
+            
+            # only update every 10 iterations
+            if iter_counter % 10 == 0:
+                self.sess.run(self.z_update, tf_dict)
+                self.sess.run(self.gamma_update, tf_dict)
+                    
+            # Print
+            if iter_counter % 100 == 0:
+                elapsed = time.time() - start_time
+                loss_value = self.sess.run(self.loss, tf_dict)
+                print('Iteration Number: %d, Loss: %.3e ,Time: %.2f' %(iter_counter, loss_value, elapsed))
+                start_time = time.time()
+            
+            iter_counter += 1
         
     ###################################
-    #   Sfot-Thresholding Operation   #
+    #   Soft-Thresholding Operation   #
     ###################################
     def soft_thresholding(self):
         val = self.f_pred + self.lagrange/self.rho
@@ -257,11 +270,12 @@ if __name__ == "__main__":
     ############################################        
     lagrangeiplier_initial_guess = 1
     penalty_parameter = 1
+    NumberofIterations = 100000
             
     model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrangeiplier_initial_guess, penalty_parameter)
     
     start_time = time.time()                
-    model.train()
+    model.train(NumberofIterations)
     elapsed = time.time() - start_time                
     print('Training time: %.4f' % (elapsed))
     
