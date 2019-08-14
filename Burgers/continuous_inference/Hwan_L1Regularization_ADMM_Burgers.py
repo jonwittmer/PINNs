@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 @author: Maziar Raissi
 Modified by Hwan Goh, Oden Institute of Computational Sciences and Engineering, 10/8/2019
@@ -162,27 +163,26 @@ class PhysicsInformedNN:
     ############################
     #   Train Neural Network   #
     ############################ 
-    def train(self,nIter):        
+    def train(self,number_of_ADMM_iterations,number_of_w_optimization_steps):        
         tf_dict = {self.x_u_tf: self.x_u, self.t_u_tf: self.t_u, self.u_tf: self.u,
                    self.x_f_tf: self.x_f, self.t_f_tf: self.t_f}
                                                                                                                           
         start_time = time.time()
-        #for it in range(nIter):
+        #=== Iterations ===#
         iter_counter = 0
         loss_value = 1000
-        while iter_counter < nIter and abs(loss_value) > self.tol:
+        while iter_counter < number_of_ADMM_iterations and abs(loss_value) > self.tol:
             self.sess.run(self.train_op_Adam, tf_dict)
-            # only update every 10 iterations
-            if iter_counter % 10 == 0:
+            #=== Set Number of Iterations to Optimize w ===#
+            if iter_counter % number_of_w_optimization_steps == 0:
                 self.sess.run(self.z_update, tf_dict)
                 self.sess.run(self.lagrange_update, tf_dict)                    
-            # Print
+            #=== Print Iteration Information ===#
             if iter_counter % 100 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
-                print('Iteration Number: %d, Loss: %.3e ,Time: %.2f' %(iter_counter, loss_value, elapsed))
-                start_time = time.time()
-            
+                print('Iteration Number: %d, Loss: %.3e ,Time Elapsed: %.2f' %(iter_counter, loss_value, elapsed))
+                start_time = time.time()            
             iter_counter += 1
         
     ###################################
@@ -268,12 +268,13 @@ if __name__ == "__main__":
     ############################################        
     lagrangeiplier_initial_guess = 1
     penalty_parameter = 0.5
-    NumberofIterations = 100000
+    number_of_ADMM_iterations = 100000
+    number_of_w_optimization_steps = 100
             
     model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrangeiplier_initial_guess, penalty_parameter)
     
     start_time = time.time()                
-    model.train(NumberofIterations)
+    model.train(number_of_ADMM_iterations,number_of_w_optimization_steps)
     elapsed = time.time() - start_time                
     print('Training time: %.4f' % (elapsed))
     
@@ -354,7 +355,7 @@ if __name__ == "__main__":
     ax.set_ylim([-1.1,1.1])    
     ax.set_title('$t = 0.75$', fontsize = 10)
     
-    filename = 'figures/Correct/ADMM_Z_1.png'
+    filename = 'figures/Correct/scaled_w_functional'
     print()
     print('Figure saved to ' + filename)
     print()
