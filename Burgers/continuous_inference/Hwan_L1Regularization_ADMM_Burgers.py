@@ -81,8 +81,8 @@ class PhysicsInformedNN:
                
         #=== Lagrange Multiplier, Loss Function and Optimizer ===#        
         self.loss = (1/self.N_u)*tf.pow(tf.norm(self.u_tf - self.u_pred,2),2) + \
-                    tf.matmul(tf.transpose(self.lagrange), self.net_f(self.x_f_tf, self.t_f_tf)) +\
-                    (self.rho/2)*tf.pow(tf.norm(self.f_pred - self.z,2),2)
+                    tf.matmul(tf.transpose(self.lagrange), self.net_f(self.x_f_tf, self.t_f_tf)) + \
+                    (self.rho/2)*tf.pow(tf.norm(self.f_pred - self.z + tf.div(self.lagrange,self.rho),2),2)
                                    
         self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam = self.optimizer_Adam.minimize(self.loss) 
