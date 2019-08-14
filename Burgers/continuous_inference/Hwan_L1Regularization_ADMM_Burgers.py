@@ -70,15 +70,15 @@ class PhysicsInformedNN:
         self.f_pred = self.net_f(self.x_f_tf, self.t_f_tf)         
         
         #=== Lagrange Multiplier and z Dummy Variable ===#
-        self.lagrange = tf.Variable(tf.ones([self.x_f.shape[0],1]),dtype=tf.float32,trainable = False)
-        self.z = tf.Variable(tf.ones([self.x_f.shape[0],1]),dtype=tf.float32,trainable = False) # z will later be initialized to equal r(w) after all the variables of the graph is intialized. However, we create it here first to ensure the dimensions are correct
+        self.lagrange = tf.Variable(tf.ones([self.N_r,1]), dtype=tf.float32,trainable = False)
+        self.z = tf.Variable(tf.ones([self.N_r,1]), dtype=tf.float32,trainable = False) # z will later be initialized to equal r(w) after all the variables of the graph is intialized. However, we create it here first to ensure the dimensions are correct
         self.rho = tf.constant(penalty_parameter)
 
-        #=== Updating Lagrange Multiplier and z Dummy Variable ===# Note 
-        self.z_update = self.z.assign(self.compute_z())        
+        #=== Updating Lagrange Multiplier and z Dummy Variable ===#
+        self.one_over_rhoN_r = 1/(self.rho*self.N_r)
+        self.z_update = self.z.assign(self.soft_thresholding())        
         self.lagrange_update = self.lagrange.assign(self.lagrange + self.rho*(self.f_pred - self.z))
-
-        
+               
         #=== Lagrange Multiplier, Loss Function and Optimizer ===#        
         self.loss = (1/self.N_u)*tf.pow(tf.norm(self.u_tf - self.u_pred,2),2) + \
                     tf.matmul(tf.transpose(self.lagrange), self.net_f(self.x_f_tf, self.t_f_tf)) +\
@@ -172,12 +172,10 @@ class PhysicsInformedNN:
         loss_value = 1000
         while iter_counter < nIter and abs(loss_value) > self.tol:
             self.sess.run(self.train_op_Adam, tf_dict)
-            
             # only update every 10 iterations
             if iter_counter % 10 == 0:
                 self.sess.run(self.z_update, tf_dict)
-                self.sess.run(self.gamma_update, tf_dict)
-                    
+                self.sess.run(self.lagrange_update, tf_dict)                    
             # Print
             if iter_counter % 100 == 0:
                 elapsed = time.time() - start_time
@@ -195,8 +193,8 @@ class PhysicsInformedNN:
         # annoying digital logic workaround to implement conditional.
         # construct vectors of 1's and 0's that we can multiply
         # by the proper value and sum together
-        cond1 = tf.where(tf.greater(val, 1/(self.rho*self.N_r)), tf.ones(self.N_r,1), tf.zeros(self.N_r,1))
-        cond3 = tf.where(tf.less(val, -1/(self.rho*self.N_r)), tf.ones(self.N_r,1), tf.zeros(self.N_r,1))
+        cond1 = tf.where(tf.greater(val, self.one_over_rhoN_r), tf.ones([self.N_r,1]), tf.zeros([self.N_r,1]))
+        cond3 = tf.where(tf.less(val, -1*self.one_over_rhoN_r), tf.ones([self.N_r,1]), tf.zeros([self.N_r,1]))
         # cond2 is not needed since the complement of the intersection
         # of (cond1 and cond3) is cond2 and already assigned to 0
         z = cond1*(val - 1/(self.rho*self.N_r)) + cond3*(val + 1/(self.rho*self.N_r))        
@@ -269,7 +267,7 @@ if __name__ == "__main__":
     #   Construct, Train and Run PINNs Model   #
     ############################################        
     lagrangeiplier_initial_guess = 1
-    penalty_parameter = 1
+    penalty_parameter = 0.5
     NumberofIterations = 100000
             
     model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrangeiplier_initial_guess, penalty_parameter)
@@ -355,6 +353,13 @@ if __name__ == "__main__":
     ax.set_xlim([-1.1,1.1])
     ax.set_ylim([-1.1,1.1])    
     ax.set_title('$t = 0.75$', fontsize = 10)
+    
+    filename = 'figures/Correct/ADMM_Z_1.png'
+    print()
+    print('Figure saved to ' + filename)
+    print()
+
+    plt.savefig(filename, dpi=300)
     
     # savefig('./figures/Burgers')  
     
