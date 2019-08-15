@@ -92,9 +92,8 @@ class PhysicsInformedNN:
 
         # ADMM loss term for training the weights - use backprop on this
         self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
-                    tf.matmul(tf.abs(tf.transpose(self.gamma)), tf.abs(self.f_pred)) + \
-                    self.rho / 2 * tf.pow(tf.norm(self.f_pred - self.z, 2), 2)
-        
+                    self.rho / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.gamma / self.rho, 2), 2)
+            
         self.gamma_update = self.gamma.assign(self.gamma + self.rho * (self.f_pred - self.z))
         self.z_update = self.z.assign(self.compute_z())
         
@@ -240,7 +239,7 @@ if __name__ == "__main__":
      
     nu = 0.01 / np.pi
 
-    N_u = 2000
+    N_u = 100
     N_r = 100000
     layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
     
@@ -259,14 +258,36 @@ if __name__ == "__main__":
     lb = X_star.min(0)
     ub = X_star.max(0)
     
+    #=== Initial Condition ===#
+    xx1 = np.hstack((X[0:1,:].T, T[0:1,:].T)) # 256 x 2 matrix where first column is all the spatial values x and the second column is all zeros, representing time=0
+    uu1 = Exact[0:1,:].T # 256 x 1 matrix of initial condition values: takes the first row of Exact which contains the values at all 256 spatial points at time=0
+    
+    #=== Boundary Conditions ===#
+    xx2 = np.hstack((X[:,0:1], T[:,0:1])) # 100 x 2 matrix where first column is all -1 which represents the left boundary points and the second column is all the time points
+    uu2 = Exact[:,0:1] # 100 x 2 matrix of left boundary condition values: takes the first column of Exact which contains the values at x=-1 at all 100 time points
+    xx3 = np.hstack((X[:,-1:], T[:,-1:])) # 100 x 2 matrix where first column is all -1 which represents the left boundary points and the second column is all the time points
+    uu3 = Exact[:,-1:] # 100 x 2 matrix of right boundary condition values: takes the last column of Exact which contains the values at x=-1 at all 100 time points
+    
+    X_u_train = np.vstack([xx1, xx2, xx3]) # 456 x 2 matrix which is the stacked initial and boundary conditions
+    u_train = np.vstack([uu1, uu2, uu3]) # 456 x 1 matrix of stacked initial and boundary condition values
+    #X_f_train = lb + (ub-lb)*lhs(2, N_f) # 10000 x 2 matrix. Randomly selected collocation points. lhs is a Latin hypercube which creates random arrows. For example, lhs(x,1) creates a row (why row?) array of numbers between 0 and 1
+    #X_f_train = np.vstack((X_f_train, X_u_train)) # 10456 x 2 matrix stacking the initial and boundary conditions with the collocation points
+      
+    ##############################
+    #   Construct Training Data  #
+    ##############################
+    idx = np.random.choice(X_u_train.shape[0], N_u, replace=False) # Out of the array [0,1,2,...,X_star.shape[0]], select N_u random numbers without repeats. That is, once a number is select it, remove it from the array and do not replace it
+    X_u_train = X_u_train[idx, :]
+    u_train = u_train[idx,:]
+
     ######################################################################
     ######################## Noiseles Data ###############################
     ######################################################################
-    noise = 0.0
+    #noise = 0.0
              
-    idx = np.random.choice(X_star.shape[0], N_u, replace=False)
-    X_u_train = X_star[idx, :]
-    u_train = u_star[idx, :]
+    #idx = np.random.choice(X_star.shape[0], N_u, replace=False)
+    #X_u_train = X_star[idx, :]
+    #u_train = u_star[idx, :]
     X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
     model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub, X_phys_train)
