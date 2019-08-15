@@ -276,7 +276,7 @@ if __name__ == "__main__":
     ############################################        
     lagrangeiplier_initial_guess = 1
     penalty_parameter = 0.5
-    number_of_ADMM_iterations = 100000
+    number_of_ADMM_iterations = 1000000
     number_of_w_optimization_steps = 100
             
     model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrangeiplier_initial_guess, penalty_parameter)
@@ -363,7 +363,7 @@ if __name__ == "__main__":
     ax.set_ylim([-1.1,1.1])    
     ax.set_title('$t = 0.75$', fontsize = 10)
     
-    filename = 'figures/Correct/scaled_w_functional'
+    filename = 'figures/Correct/scaled_w_functional_1000000Iterations'
     print()
     print('Figure saved to ' + filename)
     print()
