@@ -58,8 +58,8 @@ class PhysicsInformedNN:
         
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
-                                     intra_op_parallelism_threads=1,
-                                     inter_op_parallelism_threads=4,
+                                     intra_op_parallelism_threads=4,
+                                     inter_op_parallelism_threads=2,
                                      gpu_options=self.gpu_options)
         
         # tf placeholders and graph
@@ -241,7 +241,7 @@ if __name__ == "__main__":
     nu = 0.01 / np.pi
 
     N_u = 2000
-    N_r = 10000
+    N_r = 100000
     layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
     
     data = scipy.io.loadmat('../Data/burgers_shock.mat')
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
     model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub, X_phys_train)
-    model.train(100000)
+    model.train(1000000)
     
     u_pred, f_pred = model.predict(X_star)
             
@@ -393,7 +393,7 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
     
-    filename = 'figures/Correct/ADMM_Z_1.png'
+    filename = 'figures/Correct/Train_1e6/ADMM_Z_1_Nr_100.png'
     print()
     print('Figure saved to ' + filename)
     print()
