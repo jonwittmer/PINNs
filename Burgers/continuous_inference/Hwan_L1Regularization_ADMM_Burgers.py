@@ -30,8 +30,12 @@ class PhysicsInformedNN:
     ############################
     #   Initialize the Class   #
     ############################
-    def __init__(self, X_u, u, X_f, layers, lb, ub, nu, lagrangeiplier_initial_guess, penalty_parameter): # "__init__" is a constructor for a class, it is called automatically if you create an instance of a class
+    def __init__(self, X_u, u, X_f, layers, lb, ub, nu, lagrange_initial_guess, penalty_parameter, filename, GPU_number): # "__init__" is a constructor for a class, it is called automatically if you create an instance of a class
         
+        
+        self.filename = filename # for book-keeping purposes
+        
+        #=== Spatial and Temporal Domain Attributes ===#
         self.lb = lb
         self.ub = ub
     
@@ -54,7 +58,7 @@ class PhysicsInformedNN:
         self.weights, self.biases = self.initialize_NN(layers)
         
         #=== tf placeholders and Graph ===#
-        self.gpu_options = tf.GPUOptions(visible_device_list='2')
+        self.gpu_options = tf.GPUOptions(visible_device_list=GPU_number)
 
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
@@ -171,7 +175,7 @@ class PhysicsInformedNN:
     ############################
     #   Train Neural Network   #
     ############################ 
-    def train(self,number_of_ADMM_iterations,number_of_w_optimization_steps):        
+    def train(self,number_of_ADMM_iterations,number_of_w_optimization_steps,filename,GPU_number):        
         tf_dict = {self.x_u_tf: self.x_u, self.t_u_tf: self.t_u, self.u_tf: self.u,
                    self.x_f_tf: self.x_f, self.t_f_tf: self.t_f}
                                                                                                                           
@@ -187,9 +191,9 @@ class PhysicsInformedNN:
                 self.sess.run(self.lagrange_update, tf_dict)                    
             #=== Print Iteration Information ===#
             if iter_counter % 100 == 0:
-                elapsed = time.time() - start_time
+                time_elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
-                print('Iteration Number: %d, Loss: %.3e ,Time Elapsed: %.2f' %(iter_counter, loss_value, elapsed))
+                print('%s: \nIteration Number: %d, Loss: %.3e, Time Elapsed: %.2f, GPU Number: %s\n' %(filename, iter_counter, loss_value, time_elapsed, GPU_number))
                 start_time = time.time()            
             iter_counter += 1
         
@@ -271,27 +275,37 @@ if __name__ == "__main__":
     X_u_train = X_u_train[idx, :]
     u_train = u_train[idx,:]
     
-    ############################################
-    #   Construct, Train and Run PINNs Model   #
-    ############################################        
-    lagrangeiplier_initial_guess = 1
+    ###########################
+    #   Training Parameters   #
+    ###########################       
+    lagrange_initial_guess = 1
     penalty_parameter = 0.5
     number_of_ADMM_iterations = 1000000
     number_of_w_optimization_steps = 100
-            
-    model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrangeiplier_initial_guess, penalty_parameter)
+    GPU_number = '2'
     
+    ############################################
+    #   Construct, Train and Run PINNs Model   #
+    ############################################    
+    #=== Filename ===#
+    filepath = 'figures/'
+    penalty_parameter_string = '%.2f' %(penalty_parameter)
+    penalty_parameter_string_after_decimal = penalty_parameter_string.split('.',1)
+    filename = 'L1ADMM_0%sPenaltyParameter_%dTrainingPoints_%dADMMIterations_%dwMinIterations' %(penalty_parameter_string_after_decimal[1], N_u, number_of_ADMM_iterations, number_of_w_optimization_steps)
+            
+    #=== Construct PINNs ===#
+    model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrange_initial_guess, penalty_parameter, filename, GPU_number)
+    
+    #=== Begin Training ===#
     start_time = time.time()                
-    model.train(number_of_ADMM_iterations,number_of_w_optimization_steps)
+    model.train(number_of_ADMM_iterations, number_of_w_optimization_steps, filename, GPU_number)
     elapsed = time.time() - start_time                
-    print('Training time: %.4f' % (elapsed))
+    print('Total Training time: %.4f' %(elapsed))
     
-    u_pred, f_pred = model.predict(X_star)
-            
+    #=== Model Prediction and Error ===#
+    u_pred, f_pred = model.predict(X_star)           
     error_u = np.linalg.norm(u_star-u_pred,2)/np.linalg.norm(u_star,2)
-    print('Error u: %e' % (error_u))                     
-
-    
+    print('Error u: %e' %(error_u))                        
     U_pred = griddata(X_star, u_pred.flatten(), (X, T), method='cubic')
     Error = np.abs(Exact - U_pred)
     
@@ -363,12 +377,9 @@ if __name__ == "__main__":
     ax.set_ylim([-1.1,1.1])    
     ax.set_title('$t = 0.75$', fontsize = 10)
     
-    filename = 'figures/Correct/scaled_w_functional_1000000Iterations'
-    print()
-    print('Figure saved to ' + filename)
-    print()
-
-    plt.savefig(filename, dpi=300)
+    # Saving Figure    
+    print('\nFigure saved to ' + filepath + filename)
+    plt.savefig(filepath + filename, dpi=300)
     
     # savefig('./figures/Burgers')  
     
