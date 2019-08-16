@@ -54,7 +54,7 @@ class PhysicsInformedNN:
         self.weights, self.biases = self.initialize_NN(layers)
 
         # set configuration options
-        self.gpu_options = tf.GPUOptions(visible_device_list='3')
+        self.gpu_options = tf.GPUOptions(visible_device_list='2')
         
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
@@ -285,13 +285,13 @@ if __name__ == "__main__":
     ######################################################################
     #noise = 0.0
              
-    #idx = np.random.choice(X_star.shape[0], N_u, replace=False)
+    #idx = np.random.choice(X_star.shape[5A0], N_u, replace=False)
     #X_u_train = X_star[idx, :]
     #u_train = u_star[idx, :]
     X_phys_train = np.random.uniform(lb, ub, (N_r,2))
     
     model = PhysicsInformedNN(X_u_train, u_train, layers, lb, ub, X_phys_train)
-    model.train(1000000)
+    model.train(50000)
     
     u_pred, f_pred = model.predict(X_star)
             
@@ -414,7 +414,7 @@ if __name__ == "__main__":
     s = s1 + s2 + s3 + s4 + s5
     ax.text(0.1, 0.1, s)
     
-    filename = 'figures/Correct/Train_1e6/ADMM_Z_1_Nr_100.png'
+    filename = 'figures/Correct/Train_1e4/ADMM_Z_1_Nr_100_50000.png'
     print()
     print('Figure saved to ' + filename)
     print()
