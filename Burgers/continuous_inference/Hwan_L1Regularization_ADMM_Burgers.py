@@ -282,7 +282,7 @@ if __name__ == "__main__":
     penalty_parameter = 0.5
     number_of_ADMM_iterations = 1000000
     number_of_w_optimization_steps = 100
-    GPU_number = '2'
+    GPU_number = '3'
     
     ############################################
     #   Construct, Train and Run PINNs Model   #
