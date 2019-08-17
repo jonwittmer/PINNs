@@ -1,0 +1,152 @@
+\documentclass[10pt]{article}
+\usepackage{amsfonts,amssymb,amsmath,amsthm,ifthen}
+
+\setlength{\textwidth}{175mm}
+\setlength{\textheight}{255mm}
+\setlength{\topmargin}{-20mm}
+\setlength{\oddsidemargin}{-7mm}
+\setlength{\evensidemargin}{-7mm}
+\pagestyle{empty}
+
+%Packages
+
+\usepackage{graphicx}
+\usepackage{listings}
+
+\lstset{frame=tb,
+  language=Python,
+  aboveskip=3mm,
+  belowskip=3mm,
+  columns=flexible,
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny
+  tabsize=4
+}
+
+\title{List of Variables for Burgers Continuous Identification}
+\author{Jonathan Wittmer}
+\date{August 2019}
+
+\begin{document}
+
+\maketitle
+
+%----------------------------------------------------------
+\section{Class Variables}
+%----------------------------------------------------------
+\subsection{Class Initializers}
+\begin{itemize}
+    \item \textbf{self}: Python required member. This is implicitly passes to all class functions as the first argument.
+    \item \textbf{X}: A list of the network inputs, [x, t] for training. It seems like these points are chosen randomly.
+    \begin{lstlisting}
+        # list of random training points from matlab solution
+        idx = np.random.choice(X_star.shape[0], N_u, replace=False)
+
+        # put chosen points into list: shape=(N_u, 2)
+        X_u_train = X_star[idx, :]
+    \end{lstlisting}
+    Note that \textbf{X\_u\_train} is passed into the constructor as \textbf{X}
+    
+	\item \textbf{u}: The solution at points X.
+	\item \textbf{layers}: A list containing the dimensions of each layer in the network. The first element in the vector is the input layer, the last is the output layer. 
+	\item \textbf{lb}: Lower bound of the domain (x)
+	\item \textbf{ub}: Upper bound of the domain (x)
+\end{itemize}
+
+
+\subsection{Basic Class Members}
+
+\begin{itemize}
+	\item \textbf{lb}: Lower bound of the domain (x)
+	\item \textbf{ub}: Upper bound of the domain (x). These are used to scale the input in \textbf{neural\_net()}.
+	\item \textbf{x}: The first column of \textbf{X}. These are the domain points to train on.
+	\item \textbf{t}: The second column of \textbf{X}. These are the time points to train on.
+	\item \textbf{u}: The solution to the PDE at the training points.
+	\item \textbf{layers}: A list containing the dimensions of each layer in the network. The first element in the vector is the input layer, the last is the output layer.
+\end{itemize}
+
+
+\subsection{Tensorflow Class Members}
+
+\begin{itemize}
+    \item \textbf{weights}: A list holding the weight matrices for each layer (except the input layer).
+	\item \textbf{biases}: A list holding the bias vector for each layer (except the input layer).
+	\item \textbf{sess}: The Tensorflow object that performs all of the magic.
+    \item \textbf{lambda\_1}: This is one of the parameters of the PDE that are to be learned. We know this is learned because it is declared as a tf.Variable, which tells Tensorflow that it should be optimizing w.r.t this.
+    \item \textbf{lambda\_2}: Second PDE parameter.
+    \item \textbf{x\_tf}: Placeholder to tell tensorflow that it should expect training inputs of \textbf{x\_tf}
+	\item \textbf{t\_tf}: Same as above.
+	\item \textbf{u\_tf}: Same as above.
+	\item \textbf{u\_pred}: Calling \textbf{sess.run()} on this variable executes the neural network defined by \textbf{net\_u}
+	\item \textbf{f\_pred}: Same as above, except this is for the physics term. 
+	\item \textbf{loss}: What function are we optimmizing.
+	\item \textbf{optimizer}: The optimizer for $'L-BFGS-B'$. 
+    \item \textbf{optimizer\_Adam}: Creates a variable for the Adam optimizer.
+    \item \textbf{train\_op\_Adam}: Calling \textbf{sess.run()} on this minimizes the loss function using the Adam optimizer.  
+	\item \textbf{init}: Instructs Tensorflow to construct the graph defined by the above variables.
+\end{itemize}	
+
+\section{Class Functions}
+\begin{itemize}
+    \item \textbf{\_\_init\_\_(self, X, u, layers, lb, ub)}: Function that sets up the tensorflow variables and return the class object. This is the function run when calling the class name:
+    \begin{lstlisting}
+        model = PhysicsInformedNN(...)
+    \end{lstlisting}
+    
+    \item \textbf{initialize\_NN(self, layers)}: Function that initializes the weights and biases for the network. There are no weights or biases for the input layer. The weights for each layer are set by calling the xavier\_init function in a loop.
+    \item \textbf{xavier\_init(self, size)}: There is a particular method for initializing the weights of a NN that is especially useful when using \textbf{\textit{tanh}} activation function. The goal is to make sure that the activations don't start saturated (gradients vanished). The weights are initialized according to a normal distribution with mean 0 and variance
+    \begin{equation*}
+        \sqrt{\frac{2}{|\ell| + |\ell+1|}}
+    \end{equation*}
+    where $|\ell|$ is the dimension of the $\ell^{th}$ layer.
+    
+    \item \textbf{neural\_net(self, X, weights, biases)}: This constructs the graph of the neural network given the weights and biases. $X$ in this case is inputs to the neural network.
+    \begin{lstlisting}
+        X = [x, t]
+    \end{lstlisting}
+
+    While this code uses the tensorflow notation of tf.add(), this is not exactly required. It does make is more clear that the code is adding operations to the Tensorflow graph rather than just executing an operation on numbers. More details about how Tensorflow handles the operators can be found at\\
+    \underline{https://stackoverflow.com/questions/37900780/in-tensorflow-what-is-the-difference-between-tf-add-and-operator}\\
+
+    \begin{lstlisting}
+        tf.add(A,B) == A + B
+    \end{lstlisting}
+    
+    \item \textbf{net\_u(self, x, t)}: Creates a wrapper around the neural network defined above. It returns the NN predicted value from passing in inputs of [x, t]. I'm guessing the purpose of this function is to make it more simple to distinguish between the regular network and the physics predicted network.
+    
+    \item \textbf{net\_f(self, x, t)}: In this function we evaluate the phyics of our NN. It has the same function interface as the \textbf{net\_u}. The output is a number that represents the amount of deviation from the physics of the problem. We set up our PDE such that the RHS is 0. \\
+    I'm not sure why there is a $'[0]'$ at the end of the gradients function call. According to the Tensorflow documentation, the return value is a list of $sum(\partial y / \partial x)$ for each x provided. I don't think we are passing in a vector here. It's hard to tell because the training step is Tensorflow black magic. The only thing I can think of at this point is that since we are differentiating a NN, it provides a list of the gradients at each layer. It doesn't really matter for using the code, but at some point, we nueed to understand exactly what Tensorflow is doing so we can write our own code from scratch.
+    
+    \item \textbf{callback(self, loss, labmda\_1, labmda\_2)}: This is just to print the status of the network so we can see how it is doing during training.
+    
+    \item \textbf{train(self, nIter)}: This function is a bit odd as there are two optimization calls. The first runs \textbf{\textit{nIters}} iterations of the Adam optimizer, printing out the status every 10 iterations. After this, the $'L-BFGS-B'$ optimizer is called and runs according to its hyperparameters set in the \textbf{\_\_init\_\_} function. I'm not sure why they decide to run two optimizers. For my experience, it seems that the Adam optimizer is better at making large steps toward the global minimizer and avoids getting stuck in some local minima (maybe), however, it is not guaranteed to decrease the value of the loss function at each step. I don't know whether the $'L-BFGS-B'$ optimizer is guaranteed to decrease the loss at each step, but I have never seen it increase during trainig. My guess is this second optimization step is there to \textit{"fine tune"} the solution. 
+    
+    \item \textbf{predict(self, X\_star)}: This function clearly evaluates the predicted neural network at the points X\_star (remember that capital X is the vector $[x, t]$) and returns a tuple of the predicted value, $u$, and the physics residual, $f$. The process of evaluating this is some Tensorflow voodoo that I have not mastered yet.
+
+\end{itemize}
+	
+\section{Non-Class Code}
+There is a bunch of plotting code here that makes this section appear more complicated than it is. It is organized as follows.
+\begin{enumerate}
+    \item Define network structure
+    \item Read in data from matlab
+    \item Format data
+    \item Select random points from the data to train on (2000 currently)
+    \item Initialize NN model
+    \item Train network
+    \item Evaluate model solution and PDE parameters to w.r.t. the real solution
+    \item Repeat with added noise.
+    \item Plotting
+\end{enumerate}
+	
+%---------------------------------------------------------------
+%:                  BACK MATTER:  Bibliography
+% --------------------------------------------------------------
+\nocite{*}
+\bibliography{References}{}
+\bibliographystyle{IEEEtran}
+%---------------------------------------------------------------
+%        END: Bibliography
+%---------------------------------------------------------------
+\end{document}
