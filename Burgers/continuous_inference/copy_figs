@@ -1,0 +1,3 @@
+#!/bin/bash
+
+rsync -r PhoTai:/workspace/hwan/PINNs/Burgers/continuous_inference/figures .
