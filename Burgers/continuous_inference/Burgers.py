@@ -184,7 +184,7 @@ if __name__ == "__main__":
     u_train = u_train[idx, :]
         
     #=== Training Parameters ===#
-    number_of_epochs = 1
+    number_of_epochs = 50000
     GPU_number = '3'
     
     #=== File Name ===#
