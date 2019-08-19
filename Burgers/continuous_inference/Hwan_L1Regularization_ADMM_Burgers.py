@@ -235,7 +235,7 @@ if __name__ == "__main__":
     N_f = 10000 # number of collocation points
     layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
     
-    data = scipy.io.loadmat('../Data/burgers_shock.mat')
+    data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
     
     t = data['t'].flatten()[:,None] # 100 time points
     x = data['x'].flatten()[:,None] # 256 spatial points
@@ -280,7 +280,7 @@ if __name__ == "__main__":
     ###########################       
     lagrange_initial_guess = 1
     penalty_parameter = 0.5
-    number_of_ADMM_iterations = 1000000
+    number_of_ADMM_iterations = 100000
     number_of_w_optimization_steps = 100
     GPU_number = '3'
     
@@ -347,35 +347,35 @@ if __name__ == "__main__":
     gs1.update(top=1-1/3, bottom=0, left=0.1, right=0.9, wspace=0.5)
     
     ax = plt.subplot(gs1[0, 0])
-    ax.plot(x,Exact[25,:], 'b-', linewidth = 2, label = 'Exact')       
-    ax.plot(x,U_pred[25,:], 'r--', linewidth = 2, label = 'Prediction')
+    ax.plot(x, Exact[0, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[0, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
-    ax.set_ylabel('$u(t,x)$')    
-    ax.set_title('$t = 0.25$', fontsize = 10)
+    ax.set_ylabel('$u(t, x)$')
+    ax.set_title('$t = 0$', fontsize=10)
     ax.axis('square')
-    ax.set_xlim([-1.1,1.1])
-    ax.set_ylim([-1.1,1.1])
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
     
     ax = plt.subplot(gs1[0, 1])
-    ax.plot(x,Exact[50,:], 'b-', linewidth = 2, label = 'Exact')       
-    ax.plot(x,U_pred[50,:], 'r--', linewidth = 2, label = 'Prediction')
+    ax.plot(x, Exact[50, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[50, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
-    ax.set_ylabel('$u(t,x)$')
+    ax.set_ylabel('$u(t, x)$')
     ax.axis('square')
-    ax.set_xlim([-1.1,1.1])
-    ax.set_ylim([-1.1,1.1])
-    ax.set_title('$t = 0.50$', fontsize = 10)
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
+    ax.set_title('$t = 0.50$', fontsize=10)
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=5, frameon=False)
     
     ax = plt.subplot(gs1[0, 2])
-    ax.plot(x,Exact[75,:], 'b-', linewidth = 2, label = 'Exact')       
-    ax.plot(x,U_pred[75,:], 'r--', linewidth = 2, label = 'Prediction')
+    ax.plot(x, Exact[-1, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[-1, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
-    ax.set_ylabel('$u(t,x)$')
+    ax.set_ylabel('$u(t, x)$')
     ax.axis('square')
-    ax.set_xlim([-1.1,1.1])
-    ax.set_ylim([-1.1,1.1])    
-    ax.set_title('$t = 0.75$', fontsize = 10)
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
+    ax.set_title('$t=3.14$', fontsize=10)
     
     # Saving Figure    
     print('\nFigure saved to ' + filepath + filename)
