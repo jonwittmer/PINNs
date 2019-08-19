@@ -75,4 +75,4 @@ for time=1:size(t,1)
     pause(0.01)
 end
 
-save('Abgrall_burgers_shock','x','t','usol','-v7.3')
+save('Abgrall_burgers_shock','x','t','usol')

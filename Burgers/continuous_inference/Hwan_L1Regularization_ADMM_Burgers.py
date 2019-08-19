@@ -381,8 +381,6 @@ if __name__ == "__main__":
     print('\nFigure saved to ' + filepath + filename)
     plt.savefig(filepath + filename, dpi=300)
     
-    # savefig('./figures/Burgers')  
-    
 
 
 

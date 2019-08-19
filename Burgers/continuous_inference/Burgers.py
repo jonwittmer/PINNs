@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import scipy.io
 from scipy.interpolate import griddata
 from pyDOE import lhs
-from plotting import newfig, savefig
 from mpl_toolkits.mplot3d import Axes3D
 import time
 import matplotlib.gridspec as gridspec
@@ -23,7 +22,7 @@ tf.set_random_seed(1234)
 
 class PhysicsInformedNN:
     # Initialize the class
-    def __init__(self, X_u, u, X_f, layers, lb, ub, nu):
+    def __init__(self, X_u, u, X_f, layers, lb, ub, nu, filename, number_of_epochs, GPU_number):
         
         self.lb = lb
         self.ub = ub
@@ -39,12 +38,21 @@ class PhysicsInformedNN:
         self.layers = layers
         self.nu = nu
         
+        self.GPU_number = GPU_number
+        
         # Initialize NNs
         self.weights, self.biases = self.initialize_NN(layers)
         
         # tf placeholders and graph
-        self.sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True,
-                                                     log_device_placement=True))
+        self.gpu_options = tf.GPUOptions(visible_device_list=self.GPU_number)
+
+        self.config = tf.ConfigProto(allow_soft_placement=True,
+                                     log_device_placement=True,
+                                     intra_op_parallelism_threads=1,
+                                     inter_op_parallelism_threads=4,
+                                     gpu_options=self.gpu_options)
+
+        self.sess = tf.Session(config=self.config) # GPU related stuff
         
         self.x_u_tf = tf.placeholder(tf.float32, shape=[None, self.x_u.shape[1]])
         self.t_u_tf = tf.placeholder(tf.float32, shape=[None, self.t_u.shape[1]])
@@ -61,7 +69,7 @@ class PhysicsInformedNN:
                
         self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
                                                                 method='L-BFGS-B',
-                                                                options={'maxiter': 50000,
+                                                                options={'maxiter': number_of_epochs,
                                                                          'maxfun': 50000,
                                                                          'maxcor': 50,
                                                                          'maxls': 50,
@@ -114,7 +122,8 @@ class PhysicsInformedNN:
         return f
     
     def callback(self, loss):
-        print('Loss:', loss)
+        print('%s: \nLoss: %.3e, GPU Number: %s\n' %(filename, loss, self.GPU_number))
+
         
     def train(self):
         
@@ -143,7 +152,7 @@ if __name__ == "__main__":
     N_f = 10000
     layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
     
-    data = scipy.io.loadmat('../Data/burgers_shock.mat')
+    data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
     
     t = data['t'].flatten()[:, None]
     x = data['x'].flatten()[:, None]
@@ -174,8 +183,16 @@ if __name__ == "__main__":
     X_u_train = X_u_train[idx, :]
     u_train = u_train[idx, :]
         
-    model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu)
+    #=== Training Parameters ===#
+    number_of_epochs = 1
+    GPU_number = '3'
     
+    #=== File Name ===#
+    filepath = 'figures/'
+    filename = 'L2_%dTrainingPoints_%dCollocationPoints_%dEpochs' %(N_u, N_f, number_of_epochs)
+    
+    #=== Construct Model ===#
+    model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, filename, number_of_epochs, GPU_number)
     start_time = time.time()
     model.train()
     elapsed = time.time() - start_time
@@ -192,47 +209,47 @@ if __name__ == "__main__":
     ######################################################################
     ############################# Plotting ###############################
     ######################################################################
-    
-    fig, ax = newfig(1.0, 1.1)
+    plt.rc('text', usetex=True)
+    fig, ax = plt.subplots(figsize=(10, 10))
     ax.axis('off')
     
-    ####### Row 0: u(t, x) ##################
+    #=== Row 0: u(t,x) ===#   
     gs0 = gridspec.GridSpec(1, 2)
-    gs0.update(top=1 - 0.06, bottom=1 - 1 / 3, left=0.15, right=0.85, wspace=0)
+    gs0.update(top=1-0.06, bottom=1-1/3, left=0.15, right=0.85, wspace=0)
     ax = plt.subplot(gs0[:, :])
     
-    h = ax.imshow(U_pred.T, interpolation='nearest', cmap='rainbow',
-                  extent=[t.min(), t.max(), x.min(), x.max()],
+    h = ax.imshow(U_pred.T, interpolation='nearest', cmap='rainbow', 
+                  extent=[t.min(), t.max(), x.min(), x.max()], 
                   origin='lower', aspect='auto')
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     fig.colorbar(h, cax=cax)
     
-    ax.plot(X_u_train[:, 1], X_u_train[:, 0], 'kx', label='Data (%d points)' % (u_train.shape[0]), markersize=4, clip_on=False)
+    ax.plot(X_u_train[:,1], X_u_train[:,0], 'kx', label = 'Data (%d points)' % (u_train.shape[0]), markersize = 4, clip_on = False)
     
-    line = np.linspace(x.min(), x.max(), 2)[:, None]
-    ax.plot(t[25] * np.ones((2, 1)), line, 'w-', linewidth=1)
-    ax.plot(t[50] * np.ones((2, 1)), line, 'w-', linewidth=1)
-    ax.plot(t[75] * np.ones((2, 1)), line, 'w-', linewidth=1)
+    line = np.linspace(x.min(), x.max(), 2)[:,None]
+    ax.plot(t[25]*np.ones((2,1)), line, 'w-', linewidth = 1)
+    ax.plot(t[50]*np.ones((2,1)), line, 'w-', linewidth = 1)
+    ax.plot(t[75]*np.ones((2,1)), line, 'w-', linewidth = 1)    
     
     ax.set_xlabel('$t$')
     ax.set_ylabel('$x$')
-    ax.legend(frameon=False, loc='best')
-    ax.set_title('$u(t, x)$', fontsize=10)
+    ax.legend(frameon=False, loc = 'best')
+    ax.set_title('$u(t,x)$', fontsize = 10)
     
-    ####### Row 1: u(t, x) slices ##################
+    #=== Row 1: u(t,x) slices ===#    
     gs1 = gridspec.GridSpec(1, 3)
-    gs1.update(top=1 - 1 / 3, bottom=0, left=0.1, right=0.9, wspace=0.5)
+    gs1.update(top=1-1/3, bottom=0, left=0.1, right=0.9, wspace=0.5)
     
     ax = plt.subplot(gs1[0, 0])
-    ax.plot(x, Exact[25, :], 'b-', linewidth=2, label='Exact')
-    ax.plot(x, U_pred[25, :], 'r--', linewidth=2, label='Prediction')
+    ax.plot(x, Exact[0, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[0, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
     ax.set_ylabel('$u(t, x)$')
-    ax.set_title('$t = 0.25$', fontsize=10)
+    ax.set_title('$t = 0$', fontsize=10)
     ax.axis('square')
-    ax.set_xlim([-1.1, 1.1])
-    ax.set_ylim([-1.1, 1.1])
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
     
     ax = plt.subplot(gs1[0, 1])
     ax.plot(x, Exact[50, :], 'b-', linewidth=2, label='Exact')
@@ -240,19 +257,21 @@ if __name__ == "__main__":
     ax.set_xlabel('$x$')
     ax.set_ylabel('$u(t, x)$')
     ax.axis('square')
-    ax.set_xlim([-1.1, 1.1])
-    ax.set_ylim([-1.1, 1.1])
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
     ax.set_title('$t = 0.50$', fontsize=10)
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=5, frameon=False)
     
     ax = plt.subplot(gs1[0, 2])
-    ax.plot(x, Exact[75, :], 'b-', linewidth=2, label='Exact')
-    ax.plot(x, U_pred[75, :], 'r--', linewidth=2, label='Prediction')
+    ax.plot(x, Exact[-1, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[-1, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
     ax.set_ylabel('$u(t, x)$')
     ax.axis('square')
-    ax.set_xlim([-1.1, 1.1])
-    ax.set_ylim([-1.1, 1.1])
-    ax.set_title('$t=0.75$', fontsize=10)
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
+    ax.set_title('$t=3.14$', fontsize=10)
     
-    # savefig('./figures/Burgers')
+    # Saving Figure    
+    print('\nFigure saved to ' + filepath + filename)
+    plt.savefig(filepath + filename, dpi=300)
