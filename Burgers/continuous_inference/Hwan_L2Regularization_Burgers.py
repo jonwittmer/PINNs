@@ -23,7 +23,7 @@ tf.set_random_seed(1234)
 
 class PhysicsInformedNN:
     # Initialize the class
-    def __init__(self, X_u, u, X_f, layers, lb, ub, nu, filename, number_of_epochs, GPU_number):
+    def __init__(self, X_u, u, X_f, layers, lb, ub, nu, GPU_number):
         
         self.lb = lb
         self.ub = ub
@@ -68,13 +68,10 @@ class PhysicsInformedNN:
         self.loss = tf.norm(self.u_tf - self.u_pred, 2) + \
                     tf.reduce_mean(tf.square(self.f_pred))
                
-        self.optimizer = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
-                                                                method='L-BFGS-B',
-                                                                options={'maxiter': number_of_epochs,
-                                                                         'maxfun': 50000,
-                                                                         'maxcor': 50,
-                                                                         'maxls': 50,
-                                                                         'ftol': 1.0 * np.finfo(float).eps})
+                
+        self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
+        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss) 
+        self.tol = 0.0001
         
         init = tf.global_variables_initializer()
         self.sess.run(init)
@@ -125,16 +122,23 @@ class PhysicsInformedNN:
     def callback(self, loss):
         print('%s: \nLoss: %.3e, GPU Number: %s\n' %(filename, loss, self.GPU_number))
 
-        
-    def train(self):
-        
+
+    def train(self,number_of_epochs,filename,GPU_number):        
         tf_dict = {self.x_u_tf: self.x_u, self.t_u_tf: self.t_u, self.u_tf: self.u,
                    self.x_f_tf: self.x_f, self.t_f_tf: self.t_f}
-
-        self.optimizer.minimize(self.sess,
-                                feed_dict=tf_dict,
-                                fetches=[self.loss],
-                                loss_callback=self.callback)
+                                                                                                                          
+        start_time = time.time()
+        #=== Iterations ===#
+        iter_counter = 0
+        loss_value = 1000
+        while iter_counter < number_of_epochs and abs(loss_value) > self.tol:
+            self.sess.run(self.train_op_Adam, tf_dict)
+            if iter_counter % 100 == 0:
+                time_elapsed = time.time() - start_time
+                loss_value = self.sess.run(self.loss, tf_dict)
+                print('%s: \nIteration Number: %d, Loss: %.3e, Time Elapsed: %.2f, GPU Number: %s\n' %(filename, iter_counter, loss_value, time_elapsed, GPU_number))
+                start_time = time.time()            
+            iter_counter += 1
                                     
     def predict(self, X_star):
                 
@@ -185,7 +189,7 @@ if __name__ == "__main__":
     u_train = u_train[idx, :]
         
     #=== Training Parameters ===#
-    number_of_epochs = 50000
+    number_of_epochs = 100000
     GPU_number = '3'
     
     #=== File Name ===#
@@ -193,11 +197,9 @@ if __name__ == "__main__":
     filename = 'L2_%dTrainingPoints_%dCollocationPoints_%dEpochs' %(N_u, N_f, number_of_epochs)
     
     #=== Construct Model ===#
-    model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, filename, number_of_epochs, GPU_number)
+    model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, GPU_number)
     start_time = time.time()
-    model.train()
-    elapsed = time.time() - start_time
-    print('Training time: %.4f' % (elapsed))
+    model.train(number_of_epochs,filename,GPU_number)
     
     u_pred, f_pred = model.predict(X_star)
             
