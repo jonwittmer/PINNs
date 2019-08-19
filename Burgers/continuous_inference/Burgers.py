@@ -136,7 +136,7 @@ class PhysicsInformedNN:
     
 if __name__ == "__main__":
      
-    nu = 0.01 / np.pi
+    nu = 0 #default is 0,01/np.pi
     noise = 0.0
 
     N_u = 100
