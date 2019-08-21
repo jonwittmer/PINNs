@@ -194,7 +194,7 @@ if __name__ == "__main__":
     
     #=== File Name ===#
     filepath = 'figures/'
-    filename = 'L2_%dTrainingPoints_%dCollocationPoints_%dEpochs' %(N_u, N_f, number_of_epochs)
+    filename = 'L2_%dT_%dC_%dEpochs' %(N_u, N_f, number_of_epochs)
     
     #=== Construct Model ===#
     model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, GPU_number)
