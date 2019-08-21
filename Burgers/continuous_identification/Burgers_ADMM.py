@@ -39,7 +39,7 @@ class PINNWrapper:
         p = params
         self.params = params
 
-        self.filename = f'figures/ADMM/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/test/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
@@ -76,14 +76,17 @@ class PINNWrapper:
         idx = np.random.choice(self.X_u_train.shape[0], params.N_u, replace=False) 
         self.X_u_train = self.X_u_train[idx, :]
         self.u_train = self.u_train[idx,:]
-        
+        self.run_NN()
         
     def run_NN(self):
+        print('Running model')
         self.model = PhysicsInformedNN(self)
+        print('Training model')
         self.model.train(self.params.epochs)
         
         # calculate output statistics
         self.plot_results()
+        self.write_data()
         self.error_u = np.linalg.norm(self.u_star - self.u_pred, 2) / np.linalg.norm(self.u_star, 2)
         print('Error u: %e %%' % (self.error_u*100))
                 
@@ -165,7 +168,15 @@ class PINNWrapper:
         print()
 
         return
-    
+
+    def write_data(self):
+        self.u_pred, self.f_pred = self.model.predict(self.X_star)
+        x = self.X_star[:, 0]
+        t = self.X_star[:, 1]
+        data = {'x': x, 't': t, 'u_pred': self.u_pred[:,0]}
+        df = pd.DataFrame(data)
+        df.to_csv(self.filename[:-3] + 'csv')
+        
 
 class PhysicsInformedNN:
     # Initialize the class
@@ -205,7 +216,8 @@ class PhysicsInformedNN:
         self.train_op_Adam = self.optimizer_Adam.minimize(self.loss) 
 
         # set configuration options
-        self.gpu_options = tf.GPUOptions(visible_device_list=caller.params.gpu)
+        self.gpu_options = tf.GPUOptions(visible_device_list=caller.params.gpu,
+                                         allow_growth=True)
         
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
@@ -360,6 +372,7 @@ class PhysicsInformedNN:
             # save figure every so often so if it crashes, we have some results
             if it % 10000 == 0:
                 self.caller.plot_results()
+                self.caller.write_data()
             
             it += 1
 
