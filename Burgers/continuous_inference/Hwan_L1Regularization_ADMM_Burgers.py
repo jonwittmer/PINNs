@@ -291,7 +291,7 @@ if __name__ == "__main__":
     filepath = 'figures/'
     penalty_parameter_string = '%.2f' %(penalty_parameter)
     penalty_parameter_string_after_decimal = penalty_parameter_string.split('.',1)
-    filename = 'L1ADMM_0%sPnlty_%dT_%dC_%dEpochs_%dwMinEpochs' %(penalty_parameter_string_after_decimal[1], N_u, N_f, number_of_ADMM_iterations, number_of_w_optimization_steps)
+    filename = 'L1ADMM_0%sP_%dT_%dC_%dE_%dwMinE' %(penalty_parameter_string_after_decimal[1], N_u, N_f, number_of_ADMM_iterations, number_of_w_optimization_steps)
             
     #=== Construct PINNs ===#
     model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrange_initial_guess, penalty_parameter, filename, GPU_number)
