@@ -58,7 +58,8 @@ class PhysicsInformedNN:
         self.weights, self.biases = self.initialize_NN(layers)
         
         #=== tf placeholders and Graph ===#
-        self.gpu_options = tf.GPUOptions(visible_device_list=GPU_number)
+        self.gpu_options = tf.GPUOptions(visible_device_list=GPU_number,
+                                         allow_soft_placement=True)
 
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
