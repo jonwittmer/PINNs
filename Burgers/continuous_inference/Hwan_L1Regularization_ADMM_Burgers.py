@@ -313,7 +313,6 @@ if __name__ == "__main__":
     ###########################################################################
     #                               Plotting                                  #
     ###########################################################################    
-    
     plt.rc('text', usetex=True)
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.axis('off')
@@ -380,6 +379,7 @@ if __name__ == "__main__":
     # Saving Figure    
     print('\nFigure saved to ' + filepath + filename)
     plt.savefig(filepath + filename, dpi=300)
+
     
 
 
