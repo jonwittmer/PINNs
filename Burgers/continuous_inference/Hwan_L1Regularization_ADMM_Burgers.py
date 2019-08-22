@@ -11,6 +11,8 @@ sys.path.insert(0, '../../Utilities/')
 
 import tensorflow as tf
 import numpy as np
+import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 import scipy.io
 from scipy.interpolate import griddata
