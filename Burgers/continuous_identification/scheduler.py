@@ -83,10 +83,11 @@ class Scheduler:
             if s.tag == self.FLAGS.RUN_FINISHED:
                 print('Run ended. Starting new thread.')
                 data = comm.recv()
-                available_processes.append(s.source)
                 scenarios_left -= 1
                 if len(self.scenarios) == 0:
-                    comm.isend([], s.source, self.FLAGS.EXIT)
+                    comm.send([], s.source, self.FLAGS.EXIT)
+                else: 
+                    available_processes.append(s.source)
 
             # assign training to process
             available_gpus = self.Available_GPUs()
@@ -106,6 +107,11 @@ class Scheduler:
                 print('current process: ' + str(curr_process))
                 req = comm.isend(curr_scenario, curr_process, self.FLAGS.NEW_RUN)
                 req.wait()
+                
+            elif len(available_processes) > 0 and len(self.scenarios) == 0:
+                while len(available_processes) > 0:
+                    proc = available_processes.pop(0)
+                    comm.send([], proc, self.FLAGS.EXIT)
 
             sleep(30)
                 
@@ -138,9 +144,9 @@ if __name__ == '__main__':
         
         params = Parameters()
         params.N_u = [100, 200]
-        params.N_f = [100, 500, 1000]
+        params.N_f = [100, 200, 500, 1000]#, 5000, 10000]
         params.rho = [1.0, 10.0, 50.0, 100.0]
-        params.epochs = [1e4, 1e5, 5e5, 1e6]
+        params.epochs = [1e6]#, 1e5, 5e5, 1e6]
         
         sched = Scheduler(params)
         
@@ -157,7 +163,8 @@ if __name__ == '__main__':
             if status.tag == FLAGS.EXIT:
                 break
             
-            subprocess.Popen(['./launch_NN.py', f'{data.N_u}', f'{data.N_f}', f'{data.rho}', f'{int(data.epochs)}', f'{data.gpu}'])
+            proc = subprocess.Popen(['./launch_NN.py', f'{data.N_u}', f'{data.N_f}', f'{data.rho}', f'{int(data.epochs)}', f'{data.gpu}'])
+            proc.wait()
             
             req = comm.isend([], 0, FLAGS.RUN_FINISHED)
             req.wait()
