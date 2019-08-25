@@ -54,9 +54,8 @@ class PhysicsInformedNN:
         self.u_pred = self.net_u(self.x_data_tf, self.t_data_tf)
         self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
 
-        self.initialize_ADMM()
-        
-        self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
+        self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
+                    1 / self.N_f * tf.pow(tf.norm(self.f_pred, 2), 2)
 
         self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam = self.optimizer_Adam.minimize(self.loss)
@@ -78,12 +77,8 @@ class PhysicsInformedNN:
         self.sess.run(init)
         
         # randomly choose collocations points
-        self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f,1] )
-        self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
-
-        # assign the real initial value of z = r(w) 
-        self.sess.run(self.z.assign(self.f_pred), 
-                      feed_dict={self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys})
+        self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
+        self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
 
         self.df = pd.DataFrame()
 
@@ -104,23 +99,6 @@ class PhysicsInformedNN:
         self.x_phys_tf = tf.placeholder(tf.float32, shape=[None, 1])
         self.t_phys_tf = tf.placeholder(tf.float32, shape=[None, 1])
         return
-
-    def initialize_ADMM(self):
-        # initialize the ADMM variables
-        self.z = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
-        self.gamma = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
-        self.rho = tf.constant(self.params.rho)
-        self.c_gamma = 1 / (self.rho * self.N_f)
-        self.zeros = tf.zeros((self.N_f, 1))
-        self.ones  = tf.ones((self.N_f, 1))
-
-        # ADMM loss term for training the weights - use backprop on this
-        self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
-                    self.rho / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.gamma / self.rho, 2), 2)
-            
-        self.gamma_update = self.gamma.assign(self.gamma + self.rho * (self.f_pred - self.z))
-        self.z_update = self.z.assign(self.compute_z())
-        self.tol = 1e-4
 
     def initialize_NN(self, layers):
         weights = []
@@ -158,7 +136,6 @@ class PhysicsInformedNN:
     
     def net_f(self, x, t):
         lambda_1 = self.lambda_1
-        #lambda_2 = tf.exp(self.lambda_2)
         lambda_2 = self.lambda_2
         u = self.net_u(x, t)
         u_t = tf.gradients(u, t)[0]
@@ -171,23 +148,8 @@ class PhysicsInformedNN:
     def callback(self, loss, lambda_1, lambda_2):
         print('Loss: %e, l1: %.5f, l2: %.5f' % (loss, lambda_1, lambda_2))
         
-    def compute_z(self):
-        val   = self.f_pred + self.gamma / self.rho
-
-        # annoying digital logic workaround to implement conditional.
-        # construct vectors of 1's and 0's that we can multiply
-        # by the proper value and sum together
-        cond1 = tf.where(tf.greater(val, self.c_gamma), self.ones, self.zeros)
-        cond3 = tf.where(tf.less(val, -1.0 * self.c_gamma), self.ones, self.zeros)
-        # cond2 is not needed since the complement of the intersection
-        # of (cond1 and cond3) is cond2 and already assigned to 0
-
-        dummy_z = cond1 * (val - self.c_gamma) + cond3 * (val + self.c_gamma)
-        
-        return dummy_z
-
     def train(self, nIter):
-        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
+        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
         # main iterations: updating Lagrange multiplier
@@ -203,19 +165,15 @@ class PhysicsInformedNN:
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
             self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
-            tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
+            tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u,
                        self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
-
-            self.sess.run(self.z_update, tf_dict)
-            self.sess.run(self.gamma_update, tf_dict)
                     
             # print to monitor results
             if it % 1000 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
-                r_z = self.sess.run(self.admm_misfit, tf_dict)
-                print('It: %d, Loss: %.3e, r(w) - z: %.3f ,Time: %.2f' %
-                      (it, loss_value, r_z, elapsed))
+                print('It: %d, Loss: %.3e, Time: %.2f' %
+                      (it, loss_value, elapsed))
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
@@ -239,7 +197,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/batch/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/L2/Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
