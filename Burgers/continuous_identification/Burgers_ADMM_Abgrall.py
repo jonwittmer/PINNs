@@ -220,7 +220,7 @@ class PhysicsInformedNN:
                             
             # save figure every so often so if it crashes, we have some results
             if it % 10000 == 0:
-                self.plot_results()
+                # self.plot_results()
                 self.record_data(it)
                 self.save_data()
                 
@@ -239,7 +239,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/batch/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
@@ -287,7 +287,7 @@ class PhysicsInformedNN:
         self.train(self.params.epochs)
         
         # calculate output statistics
-        self.plot_results()
+        #self.plot_results()
         self.record_data(self.params.epochs)
         self.save_data()
         self.error_u = np.linalg.norm(self.u_star - self.u_pred_val, 2) / np.linalg.norm(self.u_star, 2)
@@ -385,6 +385,13 @@ class PhysicsInformedNN:
         
     
 if __name__ == "__main__":
-     p = Parameters()
-     A = PhysicsInformedNN(p)
+
+    p = Parameters()
+    if len(sys.argv) > 1:
+        p.N_u = int(sys.argv[1])
+        p.N_f = int(sys.argv[2])
+        p.rho = float(sys.argv[3])
+        p.epochs = int(sys.argv[4])
+        p.gpu = str(sys.argv[5])
+    A = PhysicsInformedNN(p)
     
