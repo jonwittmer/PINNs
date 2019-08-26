@@ -11,7 +11,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import sys
 
 # NN data
-filename = 'Nu100_Nf200_e1000000.csv'
+filename = 'Nu200_Nf200_e1000000.csv'
 data = pd.read_csv(filename)
 
 # check if custom index
@@ -21,7 +21,7 @@ else:
     ind = int(float(data.tail(1).epoch))
 
 # original data from matlab solution: defines plotting grid
-original_data = scipy.io.loadmat('../../../../Data/burgers_shock.mat')
+original_data = scipy.io.loadmat('../../../Data/burgers_shock.mat')
 x = original_data['x'].flatten()[:, None]
 t = original_data['t'].flatten()[:, None]
 Exact = np.real(original_data['usol']).T

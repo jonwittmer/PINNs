@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-from Burgers_ADMM_batch_L2 import Parameters, PhysicsInformedNN
+from Burgers_batch_L2 import Parameters, PhysicsInformedNN
 
 p = Parameters()
 p.N_u = int(sys.argv[1])
