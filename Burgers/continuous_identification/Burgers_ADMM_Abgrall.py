@@ -15,7 +15,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.gridspec as gridspec
 import time
 
-import nvidia_smi
 import os
 import sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -60,7 +59,7 @@ class PhysicsInformedNN:
         self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
 
         self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
-        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss) 
+        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss)
 
         # set configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
@@ -93,7 +92,7 @@ class PhysicsInformedNN:
     def initialize_variables(self):
         # Initialize PDE parameters
         self.lambda_1 = tf.Variable([1.0], dtype=tf.float32, trainable=False)
-        self.lambda_2 = tf.Variable([0.0031831], dtype=tf.float32, trainable=False)
+        self.lambda_2 = tf.Variable([0.0], dtype=tf.float32, trainable=False)
         
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
@@ -196,10 +195,17 @@ class PhysicsInformedNN:
         it = 0
         loss_value = 1000
 
-        while it < nIter and abs(loss_value) > self.tol:
-
+        while it < nIter:
+            
             # perform the admm iteration
             self.sess.run(self.train_op_Adam, tf_dict)
+
+            # new batch of collocation points
+            self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
+            self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
+            tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
+                       self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
+
             self.sess.run(self.z_update, tf_dict)
             self.sess.run(self.gamma_update, tf_dict)
                     
@@ -211,14 +217,13 @@ class PhysicsInformedNN:
                 print('It: %d, Loss: %.3e, r(w) - z: %.3f ,Time: %.2f' %
                       (it, loss_value, r_z, elapsed))
                 start_time = time.time()
-                
-            
+                            
             # save figure every so often so if it crashes, we have some results
             if it % 10000 == 0:
-                self.plot_results()
+                # self.plot_results()
                 self.record_data(it)
                 self.save_data()
-            
+                
             it += 1
 
     def predict(self, X_star):
@@ -234,11 +239,11 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
-        self.data = scipy.io.loadmat('../Data/burgers_shock.mat')
+        self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
         
         self.t = self.data['t'].flatten()[:, None]
         self.x = self.data['x'].flatten()[:, None]
@@ -282,7 +287,7 @@ class PhysicsInformedNN:
         self.train(self.params.epochs)
         
         # calculate output statistics
-        self.plot_results()
+        #self.plot_results()
         self.record_data(self.params.epochs)
         self.save_data()
         self.error_u = np.linalg.norm(self.u_star - self.u_pred_val, 2) / np.linalg.norm(self.u_star, 2)
@@ -380,6 +385,13 @@ class PhysicsInformedNN:
         
     
 if __name__ == "__main__":
-     p = Parameters()
-     A = PhysicsInformedNN(p)
+
+    p = Parameters()
+    if len(sys.argv) > 1:
+        p.N_u = int(sys.argv[1])
+        p.N_f = int(sys.argv[2])
+        p.rho = float(sys.argv[3])
+        p.epochs = int(sys.argv[4])
+        p.gpu = str(sys.argv[5])
+    A = PhysicsInformedNN(p)
     
