@@ -229,8 +229,8 @@ class PhysicsInformedNN:
                 self.record_data(epoch)
                 self.save_data()
 
-            # increase the number of Adam training steps - cap at 100 for now
-            if epoch % 1000 == 0 and num_Adam_iters <= 100:
+            # increase the number of Adam training steps - cap at 20 for now
+            if epoch % 1000 == 0 and num_Adam_iters <= 20:
                 num_Adam_iters += 1
                 
             epoch += 1
@@ -248,9 +248,9 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Staged/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Staged_Deep/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
-        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
+        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
         
