@@ -51,8 +51,8 @@ for time=1:size(t,1)
         dflux = 0.5*u(i+1)^2 - 0.5*u(i-1)^2;
         utemp(i) = 0.5*(u(i+1) + u(i-1)) - 0.5*dt/dx* dflux;
     end
-    utemp(1) = utemp(mx-1);
-    utemp(mx) = utemp(2);
+    utemp(1) = utemp(mx-1); % periodic boundary conditions
+    utemp(mx) = utemp(2);   % periodic boundary conditions
     
     u = utemp;
     usol(:,time) = u;

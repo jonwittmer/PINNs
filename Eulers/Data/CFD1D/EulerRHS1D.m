@@ -1,4 +1,4 @@
-function [rhsrho, rhsrhou, rhsEner] = EulerRHS1D(rho, rhou ,Ener)
+function [rhsrho, rhsrhou, rhsEner] = EulerRHS1D(rho, rhou ,Ener, BC)
 
 % function [rhsrho, rhsrhou, rhsEner] = EulerRHS1D(rho, rhou ,Ener)
 % Purpose  : Evaluate RHS flux in 1D Euler
@@ -28,10 +28,10 @@ drhouf(:)=nx(:).*drhouf(:)/2.0-LFc(:)/2.0.*drhou(:);
 dEnerf(:)=nx(:).*dEnerf(:)/2.0-LFc(:)/2.0.*dEner(:); 
 
 % Boundary conditions for Sod's problem
-rhoin    = 1.000;   rhouin   = 0.0;
-pin      = 1.000;   Enerin   = pin/(gamma-1.0);
-rhoout   = 0.125;   rhouout  = 0.0;
-pout     = 0.100;   Enerout  = pout/(gamma-1.0);
+rhoin    = BC.rhoin ;   rhouin   = BC.rhouin;
+pin      = BC.pin;      Enerin   = BC.Enerin;
+rhoout   = BC.rhoout;   rhouout  = BC.rhouout;
+pout     = BC.pout;     Enerout  = BC.Enerout;
 
 % Set fluxes at inflow/outflow
 rhofin =rhouin; rhoufin=rhouin.^2./rhoin+pin; 
