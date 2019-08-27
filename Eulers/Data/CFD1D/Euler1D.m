@@ -1,4 +1,4 @@
-function [rho,rhou,Ener] = Euler1D(rho, rhou, Ener, FinalTime, BC)
+function [rho_tstep,u_tstep,Ener_tstep] = Euler1D(rho, rhou, Ener, FinalTime, BC)
 
 % function [rho, rhou, Ener] = Euler1D(rho, rhou, Ener, FinalTime, BC)
 % Purpose  : Integrate 1D Euler equations until FinalTime starting with
@@ -14,6 +14,8 @@ mindx = min(x(2,:)-x(1,:));
 
 % Limit initial solution
 rho =SlopeLimitN(rho); rhou=SlopeLimitN(rhou); Ener=SlopeLimitN(Ener);
+
+time_counter = 1; % For storing solutions at each time step
 
 % outer time step loop 
 while(time<FinalTime)
@@ -53,9 +55,16 @@ while(time<FinalTime)
   Ener = (Ener + 2*Ener2 + 2*dt*rhsEner)/3;
 
   % Limit solution
-  rho =SlopeLimitN(rho); rhou=SlopeLimitN(rhou); Ener=SlopeLimitN(Ener);
+  rho = SlopeLimitN(rho); rhou=SlopeLimitN(rhou); Ener=SlopeLimitN(Ener);
+  
+  rho_tstep(:,time_counter) = rho(:);
+  u_tstep(:,time_counter) = rhou(:)./rho(:);
+  Ener_tstep(:,time_counter) = Ener(:);
   
   % Increment time and adapt timestep
   time = time+dt;
+  time_counter = time_counter + 1;
+  
+  close all
 end
 return
