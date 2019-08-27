@@ -41,8 +41,8 @@ class PhysicsInformedNN:
         self.params = params
         self.load_data()
 
-        self.pretrain_epochs = 1e4
-
+        self.tol = 1e-4
+        
         # Save dimensions
         self.N_u = self.params.N_u
         self.N_f = self.params.N_f
@@ -60,10 +60,7 @@ class PhysicsInformedNN:
         
         self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
 
-        self.pretrain_loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2)
-
         self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001)
-        self.pretrain_op_Adam = self.optimizer_Adam.minimize(self.pretrain_loss)
         self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss)
         
 
@@ -192,30 +189,21 @@ class PhysicsInformedNN:
         
         return dummy_z
 
-    def train(self, nIter):
+    def train(self, nEpochs):
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
-        # pretrain to learn the initial and boundary data
-        it = 0
-        print()
-        print('Beginning pretraining')
-        while it < self.pretrain_epochs:
-            self.sess.run(self.pretrain_op_Adam, tf_dict)
-            if it % 1000 == 0:
-                print(f'Pretrain epochs: {it}')
-            it += 1
-
-        # main iterations: updating Lagrange multiplier
+        # training 
         start_time = time.time()
-        it = 0
-        loss_value = 1000
-
+        epoch = 1
+        num_Adam_iters = 1
+            
         # train with physics
-        while it < nIter:
+        while epoch < nEpochs:
             
             # perform the admm iteration
-            self.sess.run(self.train_op_Adam, tf_dict)
+            for i in range(num_Adam_iters):
+                self.sess.run(self.train_op_Adam, tf_dict)
 
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
@@ -227,21 +215,25 @@ class PhysicsInformedNN:
             self.sess.run(self.gamma_update, tf_dict)
                     
             # print to monitor results
-            if it % 1000 == 0:
+            if epoch % 1000 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
                 r_z = self.sess.run(self.admm_misfit, tf_dict)
                 print('It: %d, Loss: %.3e, r(w) - z: %.3f ,Time: %.2f' %
-                      (it, loss_value, r_z, elapsed))
+                      (epoch, loss_value, r_z, elapsed))
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
-            if it % 10000 == 0:
+            if epoch % 10000 == 0:
                 # self.plot_results()
-                self.record_data(it)
+                self.record_data(epoch)
                 self.save_data()
+
+            # increase the number of Adam training steps - cap at 100 for now
+            if epoch % 1000 == 0 and num_Adam_iters <= 100:
+                num_Adam_iters += 1
                 
-            it += 1
+            epoch += 1
 
     def predict(self, X_star):
         
@@ -256,7 +248,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Pretrain/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Staged/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
