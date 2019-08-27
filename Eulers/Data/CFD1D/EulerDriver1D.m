@@ -43,4 +43,4 @@ BC.pout     = p(end);    BC.Enerout  = Ener(end);
 FinalTime = 0.2;
 
 % Solve Problem
-[rho_tstep,u_tstep,Ener_tstep,time_steps] = Euler1D(rho,rhou,Ener,FinalTime,BC);
+[rho_tstep,u_tstep,Ener_tstep,time_steps_storage] = Euler1D(rho,rhou,Ener,FinalTime,BC);
