@@ -162,7 +162,7 @@ if __name__ == '__main__':
             if status.tag == FLAGS.EXIT:
                 break
             
-            proc = subprocess.Popen(['./Burgers_ADMM_Abgrall.py', f'{data.N_u}', f'{data.N_f}', f'{data.rho}', f'{int(data.epochs)}', f'{data.gpu}'])
+            proc = subprocess.Popen(['./Abgrall_ADMM.py', f'{data.N_u}', f'{data.N_f}', f'{data.rho}', f'{int(data.epochs)}', f'{data.gpu}'])
             proc.wait()
             
             req = comm.isend([], 0, FLAGS.RUN_FINISHED)

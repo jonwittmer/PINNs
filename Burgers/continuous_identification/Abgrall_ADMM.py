@@ -27,8 +27,8 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_u    = 100
-    N_f    = 5000
+    N_u    = 200
+    N_f    = 1000
     rho    = 40.0
     epochs = 1e5
     gpu    = '3'
@@ -40,6 +40,8 @@ class PhysicsInformedNN:
         
         self.params = params
         self.load_data()
+
+        self.pretrain_epochs = 1e4
 
         # Save dimensions
         self.N_u = self.params.N_u
@@ -58,8 +60,12 @@ class PhysicsInformedNN:
         
         self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
 
-        self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
-        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss)
+        self.pretrain_loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2)
+
+        self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001)
+        self.pretrain_op_Adam = self.optimizer_Adam.minimize(self.pretrain_loss)
+        self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss)
+        
 
         # set configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
@@ -190,11 +196,17 @@ class PhysicsInformedNN:
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
+        # pretrain to learn the initial and boundary data
+        it = 0
+        while it < self.pretrain_epochs:
+            self.sess.run(self.pretrain_op_Adam, tf_dict)
+
         # main iterations: updating Lagrange multiplier
         start_time = time.time()
         it = 0
         loss_value = 1000
 
+        # train with physics
         while it < nIter:
             
             # perform the admm iteration
@@ -239,7 +251,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Pretrain/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
