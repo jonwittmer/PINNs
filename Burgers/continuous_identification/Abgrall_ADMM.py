@@ -198,8 +198,13 @@ class PhysicsInformedNN:
         
         # pretrain to learn the initial and boundary data
         it = 0
+        print()
+        print('Beginning pretraining')
         while it < self.pretrain_epochs:
             self.sess.run(self.pretrain_op_Adam, tf_dict)
+            if it % 1000 == 0:
+                print(f'Pretrain epochs: {it}')
+            it += 1
 
         # main iterations: updating Lagrange multiplier
         start_time = time.time()
