@@ -1,4 +1,4 @@
-function [rho_tstep,u_tstep,Ener_tstep] = Euler1D(rho, rhou, Ener, FinalTime, BC)
+function [rho_tstep,u_tstep,Ener_tstep,times_steps] = Euler1D(rho, rhou, Ener, FinalTime, BC)
 
 % function [rho, rhou, Ener] = Euler1D(rho, rhou, Ener, FinalTime, BC)
 % Purpose  : Integrate 1D Euler equations until FinalTime starting with
@@ -62,9 +62,9 @@ while(time<FinalTime)
   Ener_tstep(:,time_counter) = Ener(:);
   
   % Increment time and adapt timestep
+  times_steps(time_counter) = time;
   time = time+dt;
   time_counter = time_counter + 1;
   
-  close all
 end
 return

@@ -11,39 +11,56 @@ addpath Grid/Other
 
 cpt = cputime;
 
-% Compute Solution
+%=== Compute Solution ===%
 EulerDriver1D   
 
-% Plotting
+%=== Outputs ===%
+indices_to_be_removed = [2,3,5,6];
+x(indices_to_be_removed,:) = [];
 x = x(:);
-Fig_rho_tstep = figure;
-title('rho')
+[~, ind] = unique(x); % identify indices for unique entries of x
+duplicate_ind = setdiff(1:size(x, 1), ind); % indentify indices for duplicate indices of x
+x(duplicate_ind) = [];
+rho_tstep(duplicate_ind,:) = [];
+u_tstep(duplicate_ind,:) = [];
+Ener_tstep(duplicate_ind,:) = [];
 
-Fig_u_tstep = figure;
-title('u')
+t = times_steps;
+rhosol = rho_tstep;
+usol = u_tstep;
+Enersol = Ener_tstep;
 
-Fig_Ener_tstep = figure;
-title('Ener')
+save('Abgrall_eulers','x','t','rhosol','usol','Enersol')
 
-for t=1:size(rho_tstep,2)
-    figure(Fig_rho_tstep);
-    plot(x,rho_tstep(:,t));
-    
-    pause(0.001)
-end
-
-for t=1:size(rho_tstep,2)
-    figure(Fig_u_tstep)
-    plot(x,u_tstep(:,t))
-    title('u')
-    
-    pause(0.001)
-end
-
-for t=1:size(rho_tstep,2)
-    figure(Fig_Ener_tstep)
-    plot(x,Ener_tstep(:,t));
-    title('Ener')
-    
-    pause(0.001)
-end
+%=== Plotting ===%
+% Fig_rhosol = figure;
+% title('rho')
+% 
+% Fig_usol = figure;
+% title('u')
+% 
+% Fig_Enersol = figure;
+% title('Ener')
+% 
+% for tstep=1:size(times_steps,2)
+%     figure(Fig_rhosol);
+%     plot(x,rhosol(:,tstep));
+%     
+%     pause(0.001)
+% end
+% 
+% for tstep=1:size(times_steps,2)
+%     figure(Fig_usol)
+%     plot(x,usol(:,tstep))
+%     title('u')
+%     
+%     pause(0.001)
+% end
+% 
+% for tstep=1:size(times_steps,2)
+%     figure(Fig_Enersol)
+%     plot(x,Enersol(:,tstep));
+%     title('Ener')
+%     
+%     pause(0.001)
+% end
