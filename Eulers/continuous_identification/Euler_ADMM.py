@@ -100,7 +100,9 @@ class PhysicsInformedNN:
         self.rho_tf = tf.placeholder(tf.float32, shape=[None, self.rho.shape[1]])
         self.u_tf = tf.placeholder(tf.float32, shape=[None, self.u.shape[1]])
         self.E_tf = tf.placeholder(tf.float32, shape=[None, self.E.shape[1]])
+        print('rhoshape: ' + str(self.rho.shape[1]))
         print('ushape: ' + str(self.u.shape[1]))
+        print('Eshape: ' + str(self.E.shape[1]))
         print()
         # placeholders for training collocation points
         self.x_phys_tf = tf.placeholder(tf.float32, shape=[None, 1])
@@ -188,7 +190,7 @@ class PhysicsInformedNN:
         print('Loss: %e, l1: %.5f, l2: %.5f' % (loss))
         
     def compute_z(self):
-        val   = self.f_pred + self.lagrange / self.rho
+        val   = self.f_pred + self.lagrange / self.pen
 
         # annoying digital logic workaround to implement conditional.
         # construct vectors of 1's and 0's that we can multiply
@@ -203,7 +205,7 @@ class PhysicsInformedNN:
         return dummy_z
 
     def train(self, nEpochs):
-        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
+        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, sef.rho_tf: self.rho, self.u_tf: self.u, self.E_tf: self.E,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
         # training 
@@ -221,7 +223,7 @@ class PhysicsInformedNN:
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
             self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
-            tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
+            tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.rho_tf: self.rho, self.u_tf: self.u, self.E_tf: self.E, 
                        self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
 
             self.sess.run(self.z_update, tf_dict)
@@ -253,10 +255,14 @@ class PhysicsInformedNN:
         tf_dict = {self.x_data_tf: X_star[:, 0:1], self.t_data_tf: X_star[:, 1:2],
                    self.x_phys_tf: X_star[:, 0:1], self.t_phys_tf: X_star[:, 1:2]}
         
-        u_star = self.sess.run(self.u_pred, tf_dict)
-        f_star = self.sess.run(self.f_pred, tf_dict)
+        rho_pred_val = self.sess.run(self.rho_pred, tf_dict)
+        u_pred_val = self.sess.run(self.u_pred, tf_dict)
+        E_pred_val = self.sess.run(self.E_pred, tf_dict)
+        f1_pred_val = self.sess.run(self.f1_pred, tf_dict)
+        f2_pred_val = self.sess.run(self.f2_pred, tf_dict)
+        f3_pred_val = self.sess.run(self.f3_pred, tf_dict)
         
-        return u_star, f_star
+        return rho_pred_val, u_pred_val, E_pred_val, f1_pred_val, f2_pred_val, f3_pred_val
 
     def load_data(self):
         # to make the filename string easier to read
@@ -269,41 +275,55 @@ class PhysicsInformedNN:
         
         self.t = self.data['t'].flatten()[:, None]
         self.x = self.data['x'].flatten()[:, None]
-        self.Exact = np.real(self.data['usol']).T
+        self.Exact_rho = np.real(self.data['rhosol']).T
+        self.Exact_u = np.real(self.data['usol']).T
+        self.Exact_E = np.real(self.data['Esol']).T
         
         self.X, self.T = np.meshgrid(self.x, self.t)
         
         self.X_star = np.hstack((self.X.flatten()[:, None], self.T.flatten()[:, None]))
-        self.u_star = self.Exact.flatten()[:, None]
+        self.rho_star = self.Exact_rho.flatten()[:, None]
+        self.u_star = self.Exact_u.flatten()[:, None]
+        self.E_star = self.Exact_E.flatten()[:, None]
         
         # Domain bounds
         self.lb = self.X_star.min(0)
         self.ub = self.X_star.max(0)
         
-        #=== Initial Condition ===#
-        xx1 = np.hstack((self.X[0:1,:].T, self.T[0:1,:].T)) 
-        uu1 = self.Exact[0:1,:].T 
+        # Initial Condition
+        domain_initial = np.hstack((self.X[0:1,:].T, self.T[0:1,:].T)) 
+        initial_rho = self.Exact_rho[0:1,:].T 
+        initial_u = self.Exact_u[0:1,:].T
+        initial_E = self.Exact_E[0:1,:].T
         
-        xx2 = np.hstack((self.X[:,0:1], self.T[:,0:1])) 
-        uu2 = self.Exact[:,0:1] 
-        xx3 = np.hstack((self.X[:,-1:], self.T[:,-1:])) 
-        uu3 = self.Exact[:,-1:] 
+        # Boundary Conditions
+        domain_left_boundary = np.hstack((self.X[:,0:1], self.T[:,0:1])) 
+        left_boundary_rho = self.Exact_rho[:,0:1] 
+        left_boundary_u = self.Exact_u[:,0:1] 
+        left_boundary_E = self.Exact_E[:,0:1] 
+        domain_right_boundary = np.hstack((self.X[:,-1:], self.T[:,-1:])) 
+        right_boundary_rho = self.Exact_rho[:,-1:] 
+        right_boundary_u = self.Exact_u[:,-1:] 
+        right_boundary_E = self.Exact_E[:,-1:] 
         
-        self.X_u_train = np.vstack([xx1, xx2, xx3]) 
-        self.u_train = np.vstack([uu1, uu2, uu3]) 
-        
-
-        ##############################
-        #   Construct Training Data  #
-        ##############################
-        idx = np.random.choice(self.X_u_train.shape[0], self.params.N_data, replace=False) 
-        self.X_u_train = self.X_u_train[idx, :]
+        self.X_data_train = np.vstack([domain_initial, domain_left_boundary, domain_right_boundary]) 
+        self.rho_train = np.vstack([initial_rho, left_boundary_rho, right_boundary_rho]) 
+        self.u_train = np.vstack([initial_u, left_boundary_u, right_boundary_u]) 
+        self.E_train = np.vstack([initial_E, left_boundary_E, right_boundary_E]) 
+                
+        # Construct Training Data
+        idx = np.random.choice(self.X_data_train.shape[0], self.params.N_data, replace=False) 
+        self.X_data_train = self.X_data_train[idx, :]
+        self.rho_train = self.rho_train[idx,:]
         self.u_train = self.u_train[idx,:]
+        self.E_train = self.E_train[idx,:]
         
         # reassign here to conform to old workflow - NEEDS UPDATING
-        self.x_data = self.X_u_train[:, 0:1]
-        self.t_data = self.X_u_train[:, 1:2]
+        self.x_data = self.X_data_train[:, 0:1]
+        self.t_data = self.X_data_train[:, 1:2]
+        self.rho = self.rho_train
         self.u = self.u_train
+        self.E = self.E_train
              
     def run_NN(self):
         self.train(self.params.epochs)
@@ -312,8 +332,12 @@ class PhysicsInformedNN:
         #self.plot_results()
         self.record_data(self.params.epochs)
         self.save_data()
+        self.error_rho = np.linalg.norm(self.rho_star - self.rho_pred_val, 2) / np.linalg.norm(self.rho_star, 2)
         self.error_u = np.linalg.norm(self.u_star - self.u_pred_val, 2) / np.linalg.norm(self.u_star, 2)
+        self.error_E = np.linalg.norm(self.E_star - self.E_pred_val, 2) / np.linalg.norm(self.E_star, 2)
+        print('Error rho: %e %%' % (self.error_rho*100))
         print('Error u: %e %%' % (self.error_u*100))
+        print('Error E: %e %%' % (self.error_E*100))
                 
     def plot_results(self):
         print(self.filename)
@@ -338,7 +362,7 @@ class PhysicsInformedNN:
         cax = divider.append_axes("right", size="5%", pad=0.05)
         fig.colorbar(h, cax=cax)
         
-        ax.plot(self.X_u_train[:, 1], self.X_u_train[:, 0], 'kx', label='Data (%d points)' % (self.u_train.shape[0]), markersize=2, clip_on=False)
+        ax.plot(self.X_data_train[:, 1], self.X_data_train[:, 0], 'kx', label='Data (%d points)' % (self.u_train.shape[0]), markersize=2, clip_on=False)
         
         line = np.linspace(self.x.min(), self.x.max(), 2)[:, None]
         ax.plot(self.t[25] * np.ones((2, 1)), line, 'w-', linewidth=1)
@@ -396,10 +420,11 @@ class PhysicsInformedNN:
 
     def record_data(self, epoch_num):
         self.u_pred_val, self.f_pred_val = self.predict(self.X_star)
+        self.rho_pred_val, self.u_pred_val, self.E_pred_val, self.f1_pred_val, self.f2_pred_val, self.f3_pred_val = self.predict(self.X_star)
         x = self.X_star[:, 0]
         t = self.X_star[:, 1]
         epoch = np.ones(len(x)) * epoch_num
-        data = {'x': x, 't': t, 'u_pred': self.u_pred_val[:,0], 'epoch': epoch}
+        data = {'x': x, 't': t, 'rho_pred': self.rho_pred_val[:,0], 'u_pred': self.u_pred_val[:,0], 'E_pred': self.E_pred_val[:,0], 'epoch': epoch}
         self.df = pd.DataFrame(data)
         
     def save_data(self):
