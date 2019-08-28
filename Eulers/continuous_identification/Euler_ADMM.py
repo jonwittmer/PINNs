@@ -119,9 +119,9 @@ class PhysicsInformedNN:
         self.ones  = tf.ones((self.N_f, 1))
 
         # ADMM loss term for training the weights - use backprop on this
-        self.loss = 1 / self.N_rho * (tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2) + \
-                    1 / self.N_u * tf.pow(tf.norm(self.u_tf - self.u_pred, 2), 2) + \
-                    1 / self.N_E * tf.pow(tf.norm(self.E_tf - self.E_pred, 2), 2) + \
+        self.loss = 1 / self.N_data * (tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2) + \
+                    1 / self.N_data * tf.pow(tf.norm(self.u_tf - self.u_pred, 2), 2) + \
+                    1 / self.N_data * tf.pow(tf.norm(self.E_tf - self.E_pred, 2), 2) + \
                     self.pen / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.lagrange / self.pen, 2), 2)
             
         self.lagrange_update = self.lagrange.assign(self.lagrange + self.pen * (self.f_pred - self.z))
