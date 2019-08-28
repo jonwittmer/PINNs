@@ -122,19 +122,19 @@ class PhysicsInformedNN:
         self.ones  = tf.ones((self.N_f, 1))
 
         # ADMM loss term for training the weights - use backprop on this
-        self.loss = 1 / self.N_data * (tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2) + \
-                    1 / self.N_data * tf.pow(tf.norm(self.u_tf - self.u_pred, 2), 2) + \
-                    1 / self.N_data * tf.pow(tf.norm(self.E_tf - self.E_pred, 2), 2) + \
+        self.loss = 1 / self.N_data * (tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2)) + \
+                    1 / self.N_data * (tf.pow(tf.norm(self.u_tf - self.u_pred,     2), 2)) + \
+                    1 / self.N_data * (tf.pow(tf.norm(self.E_tf - self.E_pred,     2), 2)) + \
                     self.pen / 2 * tf.pow(tf.norm(self.f1_pred - self.z1 + self.lagrange1 / self.pen, 2), 2) + \
                     self.pen / 2 * tf.pow(tf.norm(self.f2_pred - self.z2 + self.lagrange2 / self.pen, 2), 2) + \
                     self.pen / 2 * tf.pow(tf.norm(self.f3_pred - self.z3 + self.lagrange3 / self.pen, 2), 2)
-        
+
+        self.z1_update = self.z1.assign(self.compute_z(self.f1_pred, self.lagrange1))
+        self.z2_update = self.z2.assign(self.compute_z(self.f2_pred, self.lagrange2))
+        self.z3_update = self.z3.assign(self.compute_z(self.f3_pred, self.lagrange3))        
         self.lagrange1_update = self.lagrange1.assign(self.lagrange1 + self.pen * (self.f1_pred - self.z1))
         self.lagrange2_update = self.lagrange2.assign(self.lagrange2 + self.pen * (self.f2_pred - self.z2))
         self.lagrange3_update = self.lagrange3.assign(self.lagrange3 + self.pen * (self.f3_pred - self.z3))
-        self.z1_update = self.z1.assign(self.compute_z(self.f1_pred, self.lagrange1))
-        self.z2_update = self.z2.assign(self.compute_z(self.f2_pred, self.lagrange2))
-        self.z3_update = self.z3.assign(self.compute_z(self.f3_pred, self.lagrange3))
         self.tol = 1e-4
 
     def initialize_NN(self, layers):
@@ -233,8 +233,12 @@ class PhysicsInformedNN:
             tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.rho_tf: self.rho, self.u_tf: self.u, self.E_tf: self.E, 
                        self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
 
-            self.sess.run(self.z_update, tf_dict)
-            self.sess.run(self.lagrange_update, tf_dict)
+            self.sess.run(self.z1_update, tf_dict)
+            self.sess.run(self.z2_update, tf_dict)
+            self.sess.run(self.z3_update, tf_dict)
+            self.sess.run(self.lagrange1_update, tf_dict)
+            self.sess.run(self.lagrange2_update, tf_dict)
+            self.sess.run(self.lagrange3_update, tf_dict)
                     
             # print to monitor results
             if epoch % 1000 == 0:
@@ -345,7 +349,7 @@ class PhysicsInformedNN:
         print('Error u: %e %%' % (self.error_u*100))
         print('Error E: %e %%' % (self.error_E*100))
                 
-    def plot_results_u(self):
+    def plot_results(self): # THIS NEEDS CHANGING
         print(self.filename)
         plt.rc('text', usetex=True)
         
@@ -425,7 +429,6 @@ class PhysicsInformedNN:
         return
 
     def record_data(self, epoch_num):
-        self.u_pred_val, self.f_pred_val = self.predict(self.X_star)
         self.rho_pred_val, self.u_pred_val, self.E_pred_val, self.f1_pred_val, self.f2_pred_val, self.f3_pred_val = self.predict(self.X_star)
         x = self.X_star[:, 0]
         t = self.X_star[:, 1]
