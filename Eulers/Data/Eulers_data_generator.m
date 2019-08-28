@@ -22,7 +22,6 @@ EulerDriver1D
 rhosol = rho_tstep;
 usol = u_tstep;
 Enersol = Ener_tstep;
-psol = (gamma-1)*(Enersol - (1/2)*rhosol.*(usol.^2));
 t = time_steps_storage';
 
 %=== Removing Duplicate Spatial Data ===%
@@ -33,7 +32,6 @@ x(duplicate_ind) = [];
 rhosol(duplicate_ind,:) = [];
 usol(duplicate_ind,:) = [];
 Enersol(duplicate_ind,:) = [];
-psol(duplicate_ind,:) = [];
 
 %=== Removing Unwanted Spatial Data ===%
 vector_counter = 1;
@@ -47,7 +45,6 @@ x(spatial_indices_to_be_removed,:) = [];
 rhosol(spatial_indices_to_be_removed,:) = [];
 usol(spatial_indices_to_be_removed,:) = [];
 Enersol(spatial_indices_to_be_removed,:) = [];
-psol(spatial_indices_to_be_removed,:) = [];
 
 %=== Removing Unwanted Temporal Data ===%
 vector_counter = 1;
@@ -61,9 +58,8 @@ t(temporal_indices_to_be_removed) = [];
 rhosol(:,temporal_indices_to_be_removed) = [];
 usol(:,temporal_indices_to_be_removed) = [];
 Enersol(:,temporal_indices_to_be_removed) = [];
-psol(:,temporal_indices_to_be_removed) = [];
 
-save('Abgrall_eulers','x','t','rhosol','rhousol','Enersol','psol')
+save('Abgrall_eulers','x','t','rhosol','rhousol','Enersol')
 
 %% =======================================================================%
 %                               Plotting
