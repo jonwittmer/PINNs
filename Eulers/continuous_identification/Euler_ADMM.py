@@ -30,7 +30,7 @@ class Parameters:
     N_data = 200
     N_f    = 1000
     pen    = 40.0
-    epochs = 1e5
+    epochs = 1
     gpu    = '3'
 
 
@@ -52,7 +52,10 @@ class PhysicsInformedNN:
         self.initialize_variables()
 
         # Evaluate outputs of network
-        self.rho_pred, self.u_pred. self.E_pred = self.net_rho_u_E(self.x_data_tf, self.t_data_tf)
+        rho_u_E_pred = self.net_rho_u_E(self.x_data_tf, self.t_data_tf)
+        self.rho_pred = rho_u_E_pred[:,0:1]
+        self.u_pred = rho_u_E_pred[:,1:2]
+        self.E_pred = rho_u_E_pred[:,2:3]
         self.f1_pred, self.f2_pred, self.f3_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
         
         # Initialize ADMM variables
@@ -83,9 +86,9 @@ class PhysicsInformedNN:
         self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
 
         # Assign the real initial value of z = r(w) 
-        self.sess.run(self.z1.assign(self.f1_pred),
+        self.sess.run([self.z1.assign(self.f1_pred),
                       self.z2.assign(self.f2_pred),
-                      self.z3.assign(self.f3_pred),
+                      self.z3.assign(self.f3_pred)],
                       feed_dict={self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys})
 
         self.df = pd.DataFrame()
@@ -212,7 +215,7 @@ class PhysicsInformedNN:
         return dummy_z
 
     def train(self, nEpochs):
-        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, sef.rho_tf: self.rho, self.u_tf: self.u, self.E_tf: self.E,
+        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.rho_tf: self.rho, self.u_tf: self.u, self.E_tf: self.E,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
         # training 
@@ -287,7 +290,7 @@ class PhysicsInformedNN:
         self.x = self.data['x'].flatten()[:, None]
         self.Exact_rho = np.real(self.data['rhosol']).T
         self.Exact_u = np.real(self.data['usol']).T
-        self.Exact_E = np.real(self.data['Esol']).T
+        self.Exact_E = np.real(self.data['Enersol']).T
         
         self.X, self.T = np.meshgrid(self.x, self.t)
         
