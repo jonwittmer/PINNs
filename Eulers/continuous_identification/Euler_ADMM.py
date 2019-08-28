@@ -29,7 +29,7 @@ tf.set_random_seed(1234)
 class Parameters:
     N_u    = 200
     N_f    = 1000
-    rho    = 40.0
+    pen    = 40.0
     epochs = 1e5
     gpu    = '3'
 
@@ -93,9 +93,6 @@ class PhysicsInformedNN:
         self.run_NN()
 
     def initialize_variables(self):
-        # Initialize PDE parameters
-        self.lambda_1 = tf.Variable([1.0], dtype=tf.float32, trainable=False)
-        self.lambda_2 = tf.Variable([0.0], dtype=tf.float32, trainable=False)
         
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
@@ -111,17 +108,17 @@ class PhysicsInformedNN:
     def initialize_ADMM(self):
         # initialize the ADMM variables
         self.z = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
-        self.gamma = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
-        self.rho = tf.constant(self.params.rho)
-        self.c_gamma = 1 / (self.rho * self.N_f)
+        self.lagrange = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
+        self.pen = tf.constant(self.params.pen)
+        self.recip_penNf = 1 / (self.pen * self.N_f)
         self.zeros = tf.zeros((self.N_f, 1))
         self.ones  = tf.ones((self.N_f, 1))
 
         # ADMM loss term for training the weights - use backprop on this
         self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
-                    self.rho / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.gamma / self.rho, 2), 2)
+                    self.pen / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.lagrange / self.pen, 2), 2)
             
-        self.gamma_update = self.gamma.assign(self.gamma + self.rho * (self.f_pred - self.z))
+        self.lagrange_update = self.lagrange.assign(self.lagrange + self.pen * (self.f_pred - self.z))
         self.z_update = self.z.assign(self.compute_z())
         self.tol = 1e-4
 
@@ -160,32 +157,50 @@ class PhysicsInformedNN:
         return u
     
     def net_f(self, x, t):
-        lambda_1 = self.lambda_1
-        #lambda_2 = tf.exp(self.lambda_2)
-        lambda_2 = self.lambda_2
         u = self.net_u(x, t)
         u_t = tf.gradients(u, t)[0]
         u_x = tf.gradients(u, x)[0]
         u_xx = tf.gradients(u_x, x)[0]
-        f = u_t + lambda_1 * u * u_x - lambda_2 * u_xx
+        f = u_t + * u * u_x - * u_xx
         
-        return f
+        rho = self.net_pen(x,t)
+        u = self.net_u(x,t)
+        E = self.net_E(x,t)
+        gamma = 1.4
+        p = (gamma - 1)*(E - (1/2)*rho*(u**2))
+        
+        rho_t = tf.gradients(rho, t)[0]
+        rhou_t = tf.gradients(rho*u, t)[0]
+        E_t = tf.gradients(E, t)[0]
+        
+        rhou_x = tf.gradients(rho*u, x)[0]
+        rhouu2_x = tf.gradients(rho*(u**2), x)[0] 
+        p_x = tf.gradients(p, x)[0]
+        uE_x = tf.gradients(u*E, x)[0]
+        up_x = tf.gradients(u*p, x)[0]
+        
+        
+        f_1 = rho_t + rhou_x
+        f_2 = rhou_t + rhouu2_x + p_x
+        f_3 = E_t + uE_x + up_x
+        
+        return f1 f2 f3
     
-    def callback(self, loss, lambda_1, lambda_2):
-        print('Loss: %e, l1: %.5f, l2: %.5f' % (loss, lambda_1, lambda_2))
+    def callback(self, loss,):
+        print('Loss: %e, l1: %.5f, l2: %.5f' % (loss))
         
     def compute_z(self):
-        val   = self.f_pred + self.gamma / self.rho
+        val   = self.f_pred + self.lagrange / self.rho
 
         # annoying digital logic workaround to implement conditional.
         # construct vectors of 1's and 0's that we can multiply
         # by the proper value and sum together
-        cond1 = tf.where(tf.greater(val, self.c_gamma), self.ones, self.zeros)
-        cond3 = tf.where(tf.less(val, -1.0 * self.c_gamma), self.ones, self.zeros)
+        cond1 = tf.where(tf.greater(val, self.recip_penNf), self.ones, self.zeros)
+        cond3 = tf.where(tf.less(val, -1.0 * self.recip_penNf), self.ones, self.zeros)
         # cond2 is not needed since the complement of the intersection
         # of (cond1 and cond3) is cond2 and already assigned to 0
 
-        dummy_z = cond1 * (val - self.c_gamma) + cond3 * (val + self.c_gamma)
+        dummy_z = cond1 * (val - self.recip_penNf) + cond3 * (val + self.recip_penNf)
         
         return dummy_z
 
@@ -212,7 +227,7 @@ class PhysicsInformedNN:
                        self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
 
             self.sess.run(self.z_update, tf_dict)
-            self.sess.run(self.gamma_update, tf_dict)
+            self.sess.run(self.lagrange_update, tf_dict)
                     
             # print to monitor results
             if epoch % 1000 == 0:
@@ -248,11 +263,11 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Staged_Deep/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_Euler/Staged_Deep/Nu{p.N_u}_Nf{p.N_f}_pen{int(p.pen)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
-        self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
+        self.data = scipy.io.loadmat('../Data/Abgrall_eulers.mat')
         
         self.t = self.data['t'].flatten()[:, None]
         self.x = self.data['x'].flatten()[:, None]
@@ -399,7 +414,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         p.N_u = int(sys.argv[1])
         p.N_f = int(sys.argv[2])
-        p.rho = float(sys.argv[3])
+        p.pen = float(sys.argv[3])
         p.epochs = int(sys.argv[4])
         p.gpu = str(sys.argv[5])
     A = PhysicsInformedNN(p)
