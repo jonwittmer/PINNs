@@ -27,8 +27,8 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_u    = 100
-    N_f    = 5000
+    N_u    = 200
+    N_f    = 1000
     rho    = 40.0
     epochs = 1e5
     gpu    = '3'
@@ -41,6 +41,8 @@ class PhysicsInformedNN:
         self.params = params
         self.load_data()
 
+        self.tol = 1e-4
+        
         # Save dimensions
         self.N_u = self.params.N_u
         self.N_f = self.params.N_f
@@ -54,13 +56,14 @@ class PhysicsInformedNN:
         self.u_pred = self.net_u(self.x_data_tf, self.t_data_tf)
         self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
 
-        self.initialize_ADMM()
+        self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
+                    1 / self.N_f * tf.pow(tf.norm(self.f_pred, 2), 2)
         
         self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
 
-        self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
-        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss)
-
+        self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001)
+        self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss)
+        
         # set configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
                                          allow_growth=True)
@@ -78,8 +81,8 @@ class PhysicsInformedNN:
         self.sess.run(init)
         
         # randomly choose collocations points
-        self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f,1] )
-        self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
+        self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
+        self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
 
         # assign the real initial value of z = r(w) 
         self.sess.run(self.z.assign(self.f_pred), 
@@ -115,6 +118,8 @@ class PhysicsInformedNN:
         self.ones  = tf.ones((self.N_f, 1))
 
         # ADMM loss term for training the weights - use backprop on this
+        
+
         self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
                     self.rho / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.gamma / self.rho, 2), 2)
             
@@ -186,45 +191,39 @@ class PhysicsInformedNN:
         
         return dummy_z
 
-    def train(self, nIter):
-        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
+    def train(self, nEpochs):
+        tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
-        # main iterations: updating Lagrange multiplier
+        # training
         start_time = time.time()
-        it = 0
-        loss_value = 1000
-
-        while it < nIter:
+        epoch = 1
             
-            # perform the admm iteration
+        # train with physics
+        while epoch < nEpochs:
+            
             self.sess.run(self.train_op_Adam, tf_dict)
 
-            # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
             self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
             tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u, 
                        self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
 
-            self.sess.run(self.z_update, tf_dict)
-            self.sess.run(self.gamma_update, tf_dict)
-                    
             # print to monitor results
-            if it % 1000 == 0:
+            if epoch % 1000 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
-                r_z = self.sess.run(self.admm_misfit, tf_dict)
-                print('It: %d, Loss: %.3e, r(w) - z: %.3f ,Time: %.2f' %
-                      (it, loss_value, r_z, elapsed))
+                print('It: %d, Loss: %.3e, Time: %.2f' %
+                      (epoch, loss_value, elapsed))
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
-            if it % 10000 == 0:
+            if epoch % 10000 == 0:
                 # self.plot_results()
-                self.record_data(it)
+                self.record_data(epoch)
                 self.save_data()
-                
-            it += 1
+
+            epoch += 1
 
     def predict(self, X_star):
         
@@ -239,9 +238,9 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/L2/Abgrall_PDE/Deep/Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
 
-        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
+        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
         
@@ -390,8 +389,6 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         p.N_u = int(sys.argv[1])
         p.N_f = int(sys.argv[2])
-        p.rho = float(sys.argv[3])
-        p.epochs = int(sys.argv[4])
-        p.gpu = str(sys.argv[5])
+        p.epochs = int(sys.argv[3])
+        p.gpu = str(sys.argv[4])
     A = PhysicsInformedNN(p)
-    
