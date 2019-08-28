@@ -111,8 +111,12 @@ class PhysicsInformedNN:
 
     def initialize_ADMM(self):
         # initialize the ADMM variables
-        self.z = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
-        self.lagrange = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
+        self.z1 = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
+        self.z2 = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
+        self.z3 = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
+        self.lagrange1 = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
+        self.lagrange2 = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
+        self.lagrange3 = tf.Variable(tf.ones([self.N_f, 1]), dtype=tf.float32, trainable=False)
         self.pen = tf.constant(self.params.pen)
         self.recip_penNf = 1 / (self.pen * self.N_f)
         self.zeros = tf.zeros((self.N_f, 1))
@@ -122,10 +126,16 @@ class PhysicsInformedNN:
         self.loss = 1 / self.N_data * (tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2) + \
                     1 / self.N_data * tf.pow(tf.norm(self.u_tf - self.u_pred, 2), 2) + \
                     1 / self.N_data * tf.pow(tf.norm(self.E_tf - self.E_pred, 2), 2) + \
-                    self.pen / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.lagrange / self.pen, 2), 2)
-            
-        self.lagrange_update = self.lagrange.assign(self.lagrange + self.pen * (self.f_pred - self.z))
-        self.z_update = self.z.assign(self.compute_z())
+                    self.pen / 2 * tf.pow(tf.norm(self.f1_pred - self.z1 + self.lagrange1 / self.pen, 2), 2) + \
+                    self.pen / 2 * tf.pow(tf.norm(self.f2_pred - self.z2 + self.lagrange2 / self.pen, 2), 2) + \
+                    self.pen / 2 * tf.pow(tf.norm(self.f3_pred - self.z3 + self.lagrange3 / self.pen, 2), 2)
+        
+        self.lagrange1_update = self.lagrange1.assign(self.lagrange1 + self.pen * (self.f1_pred - self.z1))
+        self.lagrange2_update = self.lagrange2.assign(self.lagrange2 + self.pen * (self.f2_pred - self.z2))
+        self.lagrange3_update = self.lagrange3.assign(self.lagrange3 + self.pen * (self.f3_pred - self.z3))
+        self.z1_update = self.z1.assign(self.compute_z(self.f1_pred, self.lagrange1))
+        self.z2_update = self.z2.assign(self.compute_z(self.f2_pred, self.lagrange2))
+        self.z3_update = self.z3.assign(self.compute_z(self.f3_pred, self.lagrange3))
         self.tol = 1e-4
 
     def initialize_NN(self, layers):
@@ -189,8 +199,8 @@ class PhysicsInformedNN:
     def callback(self, loss,):
         print('Loss: %e, l1: %.5f, l2: %.5f' % (loss))
         
-    def compute_z(self):
-        val   = self.f_pred + self.lagrange / self.pen
+    def compute_z(self, f_pred, lagrange):
+        val = f_pred + lagrange / self.pen
 
         # annoying digital logic workaround to implement conditional.
         # construct vectors of 1's and 0's that we can multiply
