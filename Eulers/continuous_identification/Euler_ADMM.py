@@ -27,7 +27,7 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_u    = 200
+    N_data = 200
     N_f    = 1000
     pen    = 40.0
     epochs = 1e5
@@ -44,7 +44,7 @@ class PhysicsInformedNN:
         self.tol = 1e-4
         
         # Save dimensions
-        self.N_u = self.params.N_u
+        self.N_data = self.params.N_data
         self.N_f = self.params.N_f
        
         # Initialize training variables
@@ -53,8 +53,8 @@ class PhysicsInformedNN:
         self.initialize_variables()
 
         # evaluate outputs of network
-        self.u_pred = self.net_u(self.x_data_tf, self.t_data_tf)
-        self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
+        self.rho_pred, self.u_pred. self.E_pred = self.net_rho_u_E(self.x_data_tf, self.t_data_tf)
+        self.f1_pred, self.f2_pred, self.f3_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
 
         self.initialize_ADMM()
         
@@ -97,7 +97,9 @@ class PhysicsInformedNN:
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
         self.t_data_tf = tf.placeholder(tf.float32, shape=[None, self.t_data.shape[1]])
+        self.rho_tf = tf.placeholder(tf.float32, shape=[None, self.rho.shape[1]])
         self.u_tf = tf.placeholder(tf.float32, shape=[None, self.u.shape[1]])
+        self.E_tf = tf.placeholder(tf.float32, shape=[None, self.E.shape[1]])
         print('ushape: ' + str(self.u.shape[1]))
         print()
         # placeholders for training collocation points
@@ -115,7 +117,9 @@ class PhysicsInformedNN:
         self.ones  = tf.ones((self.N_f, 1))
 
         # ADMM loss term for training the weights - use backprop on this
-        self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
+        self.loss = 1 / self.N_rho * (tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2) + \
+                    1 / self.N_u * tf.pow(tf.norm(self.u_tf - self.u_pred, 2), 2) + \
+                    1 / self.N_E * tf.pow(tf.norm(self.E_tf - self.E_pred, 2), 2) + \
                     self.pen / 2 * tf.pow(tf.norm(self.f_pred - self.z + self.lagrange / self.pen, 2), 2)
             
         self.lagrange_update = self.lagrange.assign(self.lagrange + self.pen * (self.f_pred - self.z))
@@ -152,20 +156,15 @@ class PhysicsInformedNN:
         Y = tf.add(tf.matmul(H, W), b)
         return Y
             
-    def net_u(self, x, t):
-        u = self.neural_net(tf.concat([x, t], 1), self.weights, self.biases)
-        return u
+    def net_rho_u_E(self, x, t):
+        rho_u_E = self.neural_net(tf.concat([x, t], 1), self.weights, self.biases)
+        return rho_u_E
     
-    def net_f(self, x, t):
-        u = self.net_u(x, t)
-        u_t = tf.gradients(u, t)[0]
-        u_x = tf.gradients(u, x)[0]
-        u_xx = tf.gradients(u_x, x)[0]
-        f = u_t + * u * u_x - * u_xx
-        
-        rho = self.net_pen(x,t)
-        u = self.net_u(x,t)
-        E = self.net_E(x,t)
+    def net_f(self, x, t):        
+        rho_u_E = self.net_rho_u_E(x,t)  
+        rho = rho_u_E[:,0:1]
+        u = rho_u_E[:,1:2]
+        E = rho_u_E[:,2:3]
         gamma = 1.4
         p = (gamma - 1)*(E - (1/2)*rho*(u**2))
         
@@ -178,13 +177,12 @@ class PhysicsInformedNN:
         p_x = tf.gradients(p, x)[0]
         uE_x = tf.gradients(u*E, x)[0]
         up_x = tf.gradients(u*p, x)[0]
+             
+        f1 = rho_t + rhou_x
+        f2 = rhou_t + rhouu2_x + p_x
+        f3 = E_t + uE_x + up_x
         
-        
-        f_1 = rho_t + rhou_x
-        f_2 = rhou_t + rhouu2_x + p_x
-        f_3 = E_t + uE_x + up_x
-        
-        return f1 f2 f3
+        return f1, f2, f3
     
     def callback(self, loss,):
         print('Loss: %e, l1: %.5f, l2: %.5f' % (loss))
@@ -263,9 +261,9 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_Euler/Staged_Deep/Nu{p.N_u}_Nf{p.N_f}_pen{int(p.pen)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_Euler/Staged_Deep/Nu{p.N_data}_Nf{p.N_f}_pen{int(p.pen)}_e{int(p.epochs)}.png'
 
-        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]
+        self.layers = [2, 200, 200, 200, 200, 200, 3]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_eulers.mat')
         
@@ -298,7 +296,7 @@ class PhysicsInformedNN:
         ##############################
         #   Construct Training Data  #
         ##############################
-        idx = np.random.choice(self.X_u_train.shape[0], self.params.N_u, replace=False) 
+        idx = np.random.choice(self.X_u_train.shape[0], self.params.N_data, replace=False) 
         self.X_u_train = self.X_u_train[idx, :]
         self.u_train = self.u_train[idx,:]
         
@@ -412,7 +410,7 @@ if __name__ == "__main__":
 
     p = Parameters()
     if len(sys.argv) > 1:
-        p.N_u = int(sys.argv[1])
+        p.N_data = int(sys.argv[1])
         p.N_f = int(sys.argv[2])
         p.pen = float(sys.argv[3])
         p.epochs = int(sys.argv[4])

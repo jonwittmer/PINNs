@@ -59,7 +59,7 @@ rhosol(:,temporal_indices_to_be_removed) = [];
 usol(:,temporal_indices_to_be_removed) = [];
 Enersol(:,temporal_indices_to_be_removed) = [];
 
-save('Abgrall_eulers','x','t','rhosol','rhousol','Enersol')
+save('Abgrall_eulers','x','t','rhosol','usol','Enersol')
 
 %% =======================================================================%
 %                               Plotting
