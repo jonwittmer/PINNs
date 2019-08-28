@@ -49,25 +49,23 @@ class PhysicsInformedNN:
        
         # Initialize training variables
         self.weights, self.biases = self.initialize_NN(self.layers)
-        
         self.initialize_variables()
 
-        # evaluate outputs of network
+        # Evaluate outputs of network
         self.rho_pred, self.u_pred. self.E_pred = self.net_rho_u_E(self.x_data_tf, self.t_data_tf)
         self.f1_pred, self.f2_pred, self.f3_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
-
+        
+        # Initialize ADMM variables
         self.initialize_ADMM()
         
-        self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
-
+        # Optimizer
         self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss)
         
 
-        # set configuration options
+        # Set GPU configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
-                                         allow_growth=True)
-        
+                                         allow_growth=True)        
         self.config = tf.ConfigProto(allow_soft_placement=True,
                                      log_device_placement=True,
                                      intra_op_parallelism_threads=4,
@@ -80,20 +78,21 @@ class PhysicsInformedNN:
         init = tf.global_variables_initializer()
         self.sess.run(init)
         
-        # randomly choose collocations points
+        # Randomly choose collocations points
         self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f,1] )
         self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
 
-        # assign the real initial value of z = r(w) 
-        self.sess.run(self.z.assign(self.f_pred), 
+        # Assign the real initial value of z = r(w) 
+        self.sess.run(self.z1.assign(self.f1_pred),
+                      self.z2.assign(self.f2_pred),
+                      self.z3.assign(self.f3_pred),
                       feed_dict={self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys})
 
         self.df = pd.DataFrame()
 
         self.run_NN()
 
-    def initialize_variables(self):
-        
+    def initialize_variables(self):        
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
         self.t_data_tf = tf.placeholder(tf.float32, shape=[None, self.t_data.shape[1]])
@@ -156,8 +155,7 @@ class PhysicsInformedNN:
         return tf.Variable(tf.truncated_normal([in_dim, out_dim], stddev=xavier_stddev), dtype=tf.float32)
     
     def neural_net(self, X, weights, biases):
-        num_layers = len(weights) + 1
-        
+        num_layers = len(weights) + 1       
         H = 2.0 * (X - self.lb) / (self.ub - self.lb) - 1.0
         for l in range(0, num_layers - 2):
             W = weights[l]
@@ -201,7 +199,6 @@ class PhysicsInformedNN:
         
     def compute_z(self, f_pred, lagrange):
         val = f_pred + lagrange / self.pen
-
         # annoying digital logic workaround to implement conditional.
         # construct vectors of 1's and 0's that we can multiply
         # by the proper value and sum together
@@ -243,9 +240,8 @@ class PhysicsInformedNN:
             if epoch % 1000 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
-                r_z = self.sess.run(self.admm_misfit, tf_dict)
-                print('It: %d, Loss: %.3e, r(w) - z: %.3f ,Time: %.2f' %
-                      (epoch, loss_value, r_z, elapsed))
+                print('It: %d, Loss: %.3e, Time: %.2f' %
+                      (epoch, loss_value, elapsed))
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
@@ -276,7 +272,7 @@ class PhysicsInformedNN:
 
     def load_data(self):
         # to make the filename string easier to read
-        p = self.params
+        params = self.params
         self.filename = f'figures/ADMM/Abgrall_Euler/Staged_Deep/Nu{p.N_data}_Nf{p.N_f}_pen{int(p.pen)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 200, 200, 200, 200, 200, 3]
@@ -349,13 +345,13 @@ class PhysicsInformedNN:
         print('Error u: %e %%' % (self.error_u*100))
         print('Error E: %e %%' % (self.error_E*100))
                 
-    def plot_results(self):
+    def plot_results_u(self):
         print(self.filename)
         plt.rc('text', usetex=True)
         
         # calculate required statistics for plotting
-        self.u_pred_val, self.f_pred_val = self.predict(self.X_star)
-        self.U_pred = griddata(self.X_star, self.u_pred_val.flatten(), (self.X, self.T), method='cubic')
+        self.rho_pred_val, self.u_pred_val, self.E_pred_val, self.f1_pred_val, self.f2_pred_val, self.f3_pred_val = self.predict(self.X_star)
+        self.u_pred_grid = griddata(self.X_star, self.u_pred_val.flatten(), (self.X, self.T), method='cubic')
         
         fig, ax = plt.subplots(figsize=(10, 10))
         ax.axis('off')
@@ -365,7 +361,7 @@ class PhysicsInformedNN:
         gs0.update(top=1 - 0.06, bottom=1 - 1.0 / 3.0 + 0.06, left=0.15, right=0.85, wspace=0)
         ax = plt.subplot(gs0[:, :])
         
-        h = ax.imshow(self.U_pred.T, interpolation='nearest', cmap='rainbow',
+        h = ax.imshow(self.u_pred_grid.T, interpolation='nearest', cmap='rainbow',
                       extent=[self.t.min(), self.t.max(), self.x.min(), self.x.max()],
                       origin='lower', aspect='auto')
         divider = make_axes_locatable(ax)
@@ -390,7 +386,7 @@ class PhysicsInformedNN:
         
         ax = plt.subplot(gs1[0, 0])
         ax.plot(self.x, self.Exact[25, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.U_pred[25, :], 'r--', linewidth=2, label='Prediction')
+        ax.plot(self.x, self.u_pred_grid[25, :], 'r--', linewidth=2, label='Prediction')
         ax.set_xlabel('$x$')
         ax.set_ylabel('$u(t,x)$')
         ax.set_title('$t = 0.25$', fontsize=18)
@@ -400,7 +396,7 @@ class PhysicsInformedNN:
         
         ax = plt.subplot(gs1[0, 1])
         ax.plot(self.x, self.Exact[50, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.U_pred[50, :], 'r--', linewidth=2, label='Prediction')
+        ax.plot(self.x, self.u_pred_grid[50, :], 'r--', linewidth=2, label='Prediction')
         ax.set_xlabel('$x$')
         ax.set_ylabel('$u(t,x)$')
         ax.axis('square')
@@ -411,7 +407,7 @@ class PhysicsInformedNN:
         
         ax = plt.subplot(gs1[0, 2])
         ax.plot(self.x, self.Exact[75, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.U_pred[75, :], 'r--', linewidth=2, label='Prediction')
+        ax.plot(self.x, self.u_pred_grid[75, :], 'r--', linewidth=2, label='Prediction')
         ax.set_xlabel('$x$')
         ax.set_ylabel('$u(t,x)$')
         ax.axis('square')
@@ -443,12 +439,12 @@ class PhysicsInformedNN:
     
 if __name__ == "__main__":
 
-    p = Parameters()
+    params = Parameters()
     if len(sys.argv) > 1:
-        p.N_data = int(sys.argv[1])
-        p.N_f = int(sys.argv[2])
-        p.pen = float(sys.argv[3])
-        p.epochs = int(sys.argv[4])
-        p.gpu = str(sys.argv[5])
-    A = PhysicsInformedNN(p)
+        params.N_data = int(sys.argv[1])
+        params.N_f = int(sys.argv[2])
+        params.pen = float(sys.argv[3])
+        params.epochs = int(sys.argv[4])
+        params.gpu = str(sys.argv[5])
+    A = PhysicsInformedNN(params)
     
