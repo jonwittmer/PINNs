@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#SBATCH -J Real_L2_PINNs
+#SBATCH -p gtx
+#SBATCH -N 1
+#SBATCH -n 9
+#SBATCH -t 24:00:00
+#SBATCH --mail-user=jonathan.wittmer@utexas.edu
+#SBATCH --mail-type=all
+
+ibrun ./scheduler_L2.py
