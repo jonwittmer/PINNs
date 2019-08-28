@@ -11,7 +11,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import sys
 
 # NN data
-filename = 'Nu100_Nf500_rho10_e1000000.csv'
+filename = 'Nu200_Nf100_rho10_e1000000.csv'
 data = pd.read_csv(filename)
 
 # check if custom index

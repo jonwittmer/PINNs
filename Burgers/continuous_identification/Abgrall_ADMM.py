@@ -229,8 +229,8 @@ class PhysicsInformedNN:
                 self.record_data(epoch)
                 self.save_data()
 
-            # increase the number of Adam training steps - cap at 20 for now
-            if epoch % 1000 == 0 and num_Adam_iters <= 20:
+            # increase the number of Adam training steps - cap at 5 for now
+            if epoch % 10000 == 0 and num_Adam_iters <= 10:
                 num_Adam_iters += 1
                 
             epoch += 1
