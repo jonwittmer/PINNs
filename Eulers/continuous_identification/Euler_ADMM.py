@@ -273,7 +273,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         params = self.params
-        self.filename = f'figures/ADMM/Abgrall_Euler/Staged_Deep/Nu{p.N_data}_Nf{p.N_f}_pen{int(p.pen)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_Euler/Staged_Deep/Nu{params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
 
         self.layers = [2, 200, 200, 200, 200, 200, 3]
         
