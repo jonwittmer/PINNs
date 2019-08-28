@@ -6,3 +6,5 @@
 *~
 *#
 *.csv
+*plot_data.py
+*.out
