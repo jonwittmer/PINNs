@@ -178,7 +178,7 @@ class PhysicsInformedNN:
                             
             # save figure every so often so if it crashes, we have some results
             if it % 10000 == 0:
-                self.plot_results()
+                #self.plot_results()
                 self.record_data(it)
                 self.save_data()
                 
@@ -245,7 +245,7 @@ class PhysicsInformedNN:
         self.train(self.params.epochs)
         
         # calculate output statistics
-        self.plot_results()
+        #self.plot_results()
         self.record_data(self.params.epochs)
         self.save_data()
         self.error_u = np.linalg.norm(self.u_star - self.u_pred_val, 2) / np.linalg.norm(self.u_star, 2)
