@@ -11,6 +11,8 @@ sys.path.insert(0, '../../Utilities/')
 
 import tensorflow as tf
 import numpy as np
+import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 import scipy.io
 from scipy.interpolate import griddata
@@ -228,14 +230,14 @@ if __name__ == "__main__":
     #######################################
     #   Construct Space and Time Domain   #
     #######################################
-    nu = 0.01/np.pi # Value of lambda_2   
+    nu = 0 # Value of lambda_2   
     noise = 0.0        
 
     N_u = 100 # number of training points
     N_f = 10000 # number of collocation points
     layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
     
-    data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
+    data = scipy.io.loadmat('../Data/burgers_shock.mat')
     
     t = data['t'].flatten()[:,None] # 100 time points
     x = data['x'].flatten()[:,None] # 256 spatial points
@@ -280,8 +282,8 @@ if __name__ == "__main__":
     ###########################       
     lagrange_initial_guess = 1
     penalty_parameter = 0.5
-    number_of_ADMM_iterations = 100000
-    number_of_w_optimization_steps = 100
+    number_of_ADMM_iterations = 1
+    number_of_w_optimization_steps = 1
     GPU_number = '3'
     
     ############################################
@@ -313,7 +315,6 @@ if __name__ == "__main__":
     ###########################################################################
     #                               Plotting                                  #
     ###########################################################################    
-    
     plt.rc('text', usetex=True)
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.axis('off')
@@ -380,6 +381,7 @@ if __name__ == "__main__":
     # Saving Figure    
     print('\nFigure saved to ' + filepath + filename)
     plt.savefig(filepath + filename, dpi=300)
+
     
 
 
