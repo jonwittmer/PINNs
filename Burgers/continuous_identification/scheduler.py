@@ -72,7 +72,7 @@ class Scheduler:
         print(str(scenarios_left) + ' total runs')
         
         # initialize available processes
-        available_processes = [1, 2, 3, 4]
+        available_processes = list(range(1, self.nprocs))
 
         # start running tasks
         while scenarios_left > 0:
@@ -137,21 +137,20 @@ class Scheduler:
 
 if __name__ == '__main__':
     # mpi stuff
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
+    comm   = MPI.COMM_WORLD
+    nprocs = comm.Get_size()
+    rank   = comm.Get_rank()
 
     if rank == 0:
         
         params = Parameters()
-        params.N_u = [100, 200]
+        params.N_u = [100, 200, 400]
         params.N_f = [100, 200, 500, 1000]#, 5000, 10000]
-        params.rho = [1.0, 10.0, 50.0, 100.0]
+        params.rho = [10.0]
         params.epochs = [1e6]#, 1e5, 5e5, 1e6]
         
         sched = Scheduler(params)
-        
-        print()
-        print(sched.Available_GPUs())
+        sched.nprocs = nprocs
         
         sched.Schedule_Runs(comm)
     
@@ -163,7 +162,7 @@ if __name__ == '__main__':
             if status.tag == FLAGS.EXIT:
                 break
             
-            proc = subprocess.Popen(['./launch_NN.py', f'{data.N_u}', f'{data.N_f}', f'{data.rho}', f'{int(data.epochs)}', f'{data.gpu}'])
+            proc = subprocess.Popen(['./Abgrall_ADMM.py', f'{data.N_u}', f'{data.N_f}', f'{data.rho}', f'{int(data.epochs)}', f'{data.gpu}'])
             proc.wait()
             
             req = comm.isend([], 0, FLAGS.RUN_FINISHED)
