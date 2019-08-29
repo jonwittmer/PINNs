@@ -352,12 +352,12 @@ class PhysicsInformedNN:
         print('Error u: %e %%' % (self.error_u*100))
         print('Error E: %e %%' % (self.error_E*100))
                 
-    def plot_results(self): # THIS NEEDS CHANGING
+    def plot_results_u(self): # THIS NEEDS CHANGING
         print(self.filename)
         plt.rc('text', usetex=True)
         
         # calculate required statistics for plotting
-        self.rho_pred_val, self.u_pred_val, self.E_pred_val, self.f1_pred_val, self.f2_pred_val, self.f3_pred_val = self.predict(self.X_star)
+        _, self.u_pred_val, _, self.f1_pred_val, _,_ = self.predict(self.X_star)
         self.u_pred_grid = griddata(self.X_star, self.u_pred_val.flatten(), (self.X, self.T), method='cubic')
         
         fig, ax = plt.subplots(figsize=(10, 10))

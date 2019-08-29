@@ -249,8 +249,9 @@ if __name__ == "__main__":
     u_star = Exact.flatten()[:,None]              
     
     #=== Domain bounds ===#
-    lb = X_star.min(0) # First spatial point at earliest time step
-    ub = X_star.max(0) # Last spatial point at latest time step  
+    lb = X_star.min(0) # 2 x 1 array of [x,t]: first spatial point at earliest time step
+    ub = X_star.max(0) # 2 x 1 array of [x,t]: last spatial point at latest time step  
+    pdb.set_trace()
     
     #######################################
     #   Initial and Boundary Conditions   #
