@@ -41,6 +41,7 @@ class PhysicsInformedNN:
         
         self.params = params
         self.load_data()
+        self.nu = 0.0031831 # parameter for PDE
 
         # Save dimensions
         self.N_u = self.params.N_u
@@ -48,21 +49,20 @@ class PhysicsInformedNN:
        
         # Initialize training variables
         self.weights, self.biases = self.initialize_NN(self.layers)
-        
-        self.initialize_variables()
+        self.initialize_placeholders()
 
         # evaluate outputs of network
         self.u_pred = self.net_u(self.x_data_tf, self.t_data_tf)
         self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
         
         # construct loss function
-        diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred)))
-        self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
-                    1 / self.N_f * tf.pow(tf.norm(tf.diag(diag_entries)*self.f_pred, 2), 2)
+        self.diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred)))
+        self.loss_IRLS = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
+                         1 / self.N_f * tf.pow(tf.norm(tf.diag(self.diag_entries)*self.f_pred, 2), 2)
         
         # set optimizer
         self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
-        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss)
+        self.train_op_Adam = self.optimizer_Adam.minimize(self.loss_IRLS)
 
         # set configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
@@ -75,13 +75,9 @@ class PhysicsInformedNN:
                                      gpu_options=self.gpu_options)
         
         # tf placeholders and graph
-        self.sess = tf.Session(config=self.config)        
-        
-        
+        self.sess = tf.Session(config=self.config)                
         init = tf.global_variables_initializer()
-        self.sess.run(init)
-        
-
+        self.sess.run(init)        
         
         # randomly choose collocations points
         self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
@@ -91,11 +87,7 @@ class PhysicsInformedNN:
         
         self.run_NN()
 
-    def initialize_variables(self):
-        # Initialize PDE parameters
-        self.lambda_1 = tf.Variable([1.0], dtype=tf.float32, trainable=False)
-        self.lambda_2 = tf.Variable([0.0031831], dtype=tf.float32, trainable=False)
-        
+    def initialize_placeholders(self):        
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
         self.t_data_tf = tf.placeholder(tf.float32, shape=[None, self.t_data.shape[1]])
@@ -141,19 +133,16 @@ class PhysicsInformedNN:
         return u
     
     def net_f(self, x, t):
-        lambda_1 = self.lambda_1
-        lambda_2 = self.lambda_2
         u = self.net_u(x, t)
         u_t = tf.gradients(u, t)[0]
         u_x = tf.gradients(u, x)[0]
         u_xx = tf.gradients(u_x, x)[0]
-        f = u_t + lambda_1 * u * u_x - lambda_2 * u_xx
+        f = u_t +  u*u_x - self.nu * u_xx
         return f
     
-    def callback(self, loss, lambda_1, lambda_2):
-        print('Loss: %e, l1: %.5f, l2: %.5f' % (loss, lambda_1, lambda_2))
         
     def train(self, nIter):
+        # initial batch of collocation points
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
@@ -163,20 +152,14 @@ class PhysicsInformedNN:
         loss_value = 1000
 
         while it < nIter:
-            
-            # perform the admm iteration
-            self.sess.run(self.train_op_Adam, tf_dict)
-
-            # new batch of collocation points
-            self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
-            self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
-            tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u,
-                       self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
-                    
+            # store current weights to be updated later using IRLS
+            weights_current = self.weights                        
+            # perform optimization
+            self.sess.run(self.train_op_Adam, tf_dict)                    
             # print to monitor results
             if it % 1000 == 0:
                 elapsed = time.time() - start_time
-                loss_value = self.sess.run(self.loss, tf_dict)
+                loss_value = self.sess.run(self.loss_IRLS, tf_dict)
                 print('It: %d, Loss: %.3e, Time: %.2f' %
                       (it, loss_value, elapsed))
                 start_time = time.time()
@@ -187,16 +170,21 @@ class PhysicsInformedNN:
                 self.record_data(it)
                 self.save_data()
                 
+            # for iteratively reweighted least squares, the new weights are equal to the old weights plus the minimizer of the IRLS loss function    
+            self.weights = weights_current + self.weights     
+            
+            # new batch of collocation points
+            self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
+            self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
+            tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u,
+                       self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}               
             it += 1
 
-    def predict(self, X_star):
-        
+    def predict(self, X_star):        
         tf_dict = {self.x_data_tf: X_star[:, 0:1], self.t_data_tf: X_star[:, 1:2],
-                   self.x_phys_tf: X_star[:, 0:1], self.t_phys_tf: X_star[:, 1:2]}
-        
+                   self.x_phys_tf: X_star[:, 0:1], self.t_phys_tf: X_star[:, 1:2]}        
         u_star = self.sess.run(self.u_pred, tf_dict)
-        f_star = self.sess.run(self.f_pred, tf_dict)
-        
+        f_star = self.sess.run(self.f_pred, tf_dict)        
         return u_star, f_star
 
     def load_data(self):
@@ -233,10 +221,7 @@ class PhysicsInformedNN:
         self.X_u_train = np.vstack([xx1, xx2, xx3]) 
         self.u_train = np.vstack([uu1, uu2, uu3]) 
         
-
-        ##############################
-        #   Construct Training Data  #
-        ##############################
+        # Construct Training Data
         idx = np.random.choice(self.X_u_train.shape[0], self.params.N_u, replace=False) 
         self.X_u_train = self.X_u_train[idx, :]
         self.u_train = self.u_train[idx,:]

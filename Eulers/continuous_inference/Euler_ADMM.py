@@ -49,7 +49,7 @@ class PhysicsInformedNN:
        
         # Initialize training variables
         self.weights, self.biases = self.initialize_NN(self.layers)
-        self.initialize_variables()
+        self.initialize_placeholders()
 
         # Evaluate outputs of network
         rho_u_E_pred = self.net_rho_u_E(self.x_data_tf, self.t_data_tf)
@@ -95,7 +95,7 @@ class PhysicsInformedNN:
 
         self.run_NN()
 
-    def initialize_variables(self):        
+    def initialize_placeholders(self):        
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
         self.t_data_tf = tf.placeholder(tf.float32, shape=[None, self.t_data.shape[1]])
@@ -196,9 +196,6 @@ class PhysicsInformedNN:
         f3 = E_t + uE_x + up_x
         
         return f1, f2, f3
-    
-    def callback(self, loss,):
-        print('Loss: %e, l1: %.5f, l2: %.5f' % (loss))
         
     def compute_z(self, f_pred, lagrange):
         val = f_pred + lagrange / self.pen
