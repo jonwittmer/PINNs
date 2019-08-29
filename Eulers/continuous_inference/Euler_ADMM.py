@@ -30,7 +30,7 @@ class Parameters:
     N_data = 200
     N_f    = 1000
     pen    = 40.0
-    epochs = 1
+    epochs = 1e5
     gpu    = '3'
 
 
@@ -221,14 +221,12 @@ class PhysicsInformedNN:
         # training 
         start_time = time.time()
         epoch = 1
-        num_Adam_iters = 1
-            
+                   
         # train with physics
         while epoch < nEpochs:
             
             # perform the admm iteration
-            for i in range(num_Adam_iters):
-                self.sess.run(self.train_op_Adam, tf_dict)
+            self.sess.run(self.train_op_Adam, tf_dict)
 
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
@@ -257,10 +255,6 @@ class PhysicsInformedNN:
                 self.record_data(epoch)
                 self.save_data()
 
-            # increase the number of Adam training steps - cap at 20 for now
-            if epoch % 1000 == 0 and num_Adam_iters <= 20:
-                num_Adam_iters += 1
-                
             epoch += 1
 
     def predict(self, X_star):
@@ -280,7 +274,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         params = self.params
-        self.filename = f'figures/ADMM/Abgrall_Euler/Staged_Deep/Nu{params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/ADMM/Euler/Wide/Nu{params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
 
         self.layers = [2, 200, 200, 200, 200, 200, 3]
         

@@ -5,7 +5,7 @@
     This code provides a scheduler to run a variety of different 
     parameter configurations for the Burgers equation
 '''
-from Burgers_ADMM import Parameters
+from Euler_ADMM import Parameters
 import nvidia_smi
 import copy
 import subprocess
@@ -27,7 +27,7 @@ class Scheduler:
         
         nvidia_smi.nvmlInit()
 
-        params_list = [params.N_u, params.N_f, params.rho, params.epochs]
+        params_list = [params.N_u, params.N_f, params.pen, params.epochs]
         self.scenarios_list = self.Assemble_Parameters(params_list)
         
         # create list of parameters for calling
@@ -36,7 +36,7 @@ class Scheduler:
             p        = Parameters()
             p.N_u    = vals[0]
             p.N_f    = vals[1]
-            p.rho    = vals[2]
+            p.pen    = vals[2]
             p.epochs = vals[3]
             self.scenarios.append(copy.deepcopy(p))
 
@@ -130,7 +130,7 @@ class Scheduler:
         print()
         print(f'    p.N_u:    {p.N_u}')
         print(f'    p.N_f:    {p.N_f}')
-        print(f'    p.rho:    {p.rho}')
+        print(f'    p.pen:    {p.pen}')
         print(f'    p.epochs: {p.epochs}')
         print(f'    p.gpu:    {p.gpu}')
         print()
@@ -146,7 +146,7 @@ if __name__ == '__main__':
         params = Parameters()
         params.N_u = [100, 200, 400]
         params.N_f = [100, 200, 500, 1000]#, 5000, 10000]
-        params.rho = [10.0]
+        params.pen = [10.0]
         params.epochs = [1e6]#, 1e5, 5e5, 1e6]
         
         sched = Scheduler(params)
@@ -162,7 +162,7 @@ if __name__ == '__main__':
             if status.tag == FLAGS.EXIT:
                 break
             
-            proc = subprocess.Popen(['./Abgrall_ADMM.py', f'{data.N_u}', f'{data.N_f}', f'{data.rho}', f'{int(data.epochs)}', f'{data.gpu}'])
+            proc = subprocess.Popen(['./Euler_ADMM.py', f'{data.N_u}', f'{data.N_f}', f'{data.pen}', f'{int(data.epochs)}', f'{data.gpu}'])
             proc.wait()
             
             req = comm.isend([], 0, FLAGS.RUN_FINISHED)
