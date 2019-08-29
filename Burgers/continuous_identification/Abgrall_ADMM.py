@@ -62,7 +62,15 @@ class PhysicsInformedNN:
 
         self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss)
-        
+
+        # 2nd order optimizer used once we get "close" to the solution
+        self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
+                                                           method='L-BFGS-B',
+                                                           options={'maxiter': 50000,
+                                                                    'maxfun': 50000,
+                                                                    'maxcor': 50,
+                                                                    'maxls': 50,
+                                                                    'ftol':1.0 * np.finfo(float).eps})
 
         # set configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
@@ -202,9 +210,11 @@ class PhysicsInformedNN:
         while epoch < nEpochs:
             
             # perform the admm iteration
-            #for i in range(num_Adam_iters):
-            self.sess.run(self.train_op_Adam, tf_dict)
-
+            if epoch < 50000:
+                self.sess.run(self.train_op_Adam, tf_dict)
+            else:
+                self.lbfgs.minimize(self.sess, feed_dict=tf_dict)
+            
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
             self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
@@ -248,7 +258,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Wide/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Wide_lbfgs/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 200, 200, 200, 200, 200, 200, 200, 200, 1]
         
