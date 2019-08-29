@@ -196,14 +196,14 @@ class PhysicsInformedNN:
         # training 
         start_time = time.time()
         epoch = 1
-        num_Adam_iters = 1
+        # num_Adam_iters = 1
             
         # train with physics
         while epoch < nEpochs:
             
             # perform the admm iteration
-            for i in range(num_Adam_iters):
-                self.sess.run(self.train_op_Adam, tf_dict)
+            #for i in range(num_Adam_iters):
+            self.sess.run(self.train_op_Adam, tf_dict)
 
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
@@ -230,8 +230,8 @@ class PhysicsInformedNN:
                 self.save_data()
 
             # increase the number of Adam training steps - cap at 5 for now
-            if epoch % 10000 == 0 and num_Adam_iters <= 10:
-                num_Adam_iters += 1
+            # if epoch % 10000 == 0 and num_Adam_iters <= 10:
+            #     num_Adam_iters += 1
                 
             epoch += 1
 
@@ -248,9 +248,9 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Staged_Deep/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Wide/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
-        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]
+        self.layers = [2, 200, 200, 200, 200, 200, 200, 200, 200, 1]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
         
