@@ -5,18 +5,18 @@ clc
 %=== Spatial Domain ===%
 spatial_domain_leftboundary = 0;
 spatial_domain_rightboundary = pi;
-n_gridpoints = 256;
+n_gridpoints = 400;
 x = spatial_domain_leftboundary:(spatial_domain_rightboundary/n_gridpoints):spatial_domain_rightboundary;
 x = x';
 
 %=== Time Domain ===%
 temporal_domain_starttime = 0;
 temporal_domain_finaltime = pi;
-n_timesteps = 256;
+n_timesteps = 400;
 t = temporal_domain_starttime:(temporal_domain_finaltime/n_timesteps):temporal_domain_finaltime;
 t = t';
 
-mu = 0.575;
+mu = 0.65;
 usol = zeros(size(x,1),size(t,1));
 
 %============================================================================================================
@@ -24,7 +24,7 @@ usol = zeros(size(x,1),size(t,1));
 
 mx = size(x,1); % number of nodes in x
 CFL = 0.95; % Courant number
-initial_condition = @(x) (mu*abs(sin(2*x))+0.1).*(0<=x).*(x<=2*pi); % initial condition
+initial_condition = @(x) (mu*abs(sin(2*x))+0.1).*(0<=x).*(x<=pi); % initial condition
 tend = t(end); % final time
 
 %=== Initialization ===%
