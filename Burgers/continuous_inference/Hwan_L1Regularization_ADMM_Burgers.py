@@ -11,6 +11,8 @@ sys.path.insert(0, '../../Utilities/')
 
 import tensorflow as tf
 import numpy as np
+import matplotlib as mpl
+mpl.use("Agg")
 import matplotlib.pyplot as plt
 import scipy.io
 from scipy.interpolate import griddata
@@ -228,7 +230,7 @@ if __name__ == "__main__":
     #######################################
     #   Construct Space and Time Domain   #
     #######################################
-    nu = 0.01/np.pi # Value of lambda_2   
+    nu = 0 # Value of lambda_2   
     noise = 0.0        
 
     N_u = 100 # number of training points
@@ -280,9 +282,9 @@ if __name__ == "__main__":
     ###########################       
     lagrange_initial_guess = 1
     penalty_parameter = 0.5
-    number_of_ADMM_iterations = 1000000
-    number_of_w_optimization_steps = 100
-    GPU_number = '2'
+    number_of_ADMM_iterations = 1
+    number_of_w_optimization_steps = 1
+    GPU_number = '3'
     
     ############################################
     #   Construct, Train and Run PINNs Model   #
@@ -291,7 +293,7 @@ if __name__ == "__main__":
     filepath = 'figures/'
     penalty_parameter_string = '%.2f' %(penalty_parameter)
     penalty_parameter_string_after_decimal = penalty_parameter_string.split('.',1)
-    filename = 'L1ADMM_0%sPenaltyParameter_%dTrainingPoints_%dADMMIterations_%dwMinIterations' %(penalty_parameter_string_after_decimal[1], N_u, number_of_ADMM_iterations, number_of_w_optimization_steps)
+    filename = 'L1ADMM_0%sP_%dT_%dC_%dE_%dwMinE' %(penalty_parameter_string_after_decimal[1], N_u, N_f, number_of_ADMM_iterations, number_of_w_optimization_steps)
             
     #=== Construct PINNs ===#
     model = PhysicsInformedNN(X_u_train, u_train, X_f_train, layers, lb, ub, nu, lagrange_initial_guess, penalty_parameter, filename, GPU_number)
@@ -313,7 +315,6 @@ if __name__ == "__main__":
     ###########################################################################
     #                               Plotting                                  #
     ###########################################################################    
-    
     plt.rc('text', usetex=True)
     fig, ax = plt.subplots(figsize=(10, 10))
     ax.axis('off')
@@ -347,41 +348,40 @@ if __name__ == "__main__":
     gs1.update(top=1-1/3, bottom=0, left=0.1, right=0.9, wspace=0.5)
     
     ax = plt.subplot(gs1[0, 0])
-    ax.plot(x,Exact[25,:], 'b-', linewidth = 2, label = 'Exact')       
-    ax.plot(x,U_pred[25,:], 'r--', linewidth = 2, label = 'Prediction')
+    ax.plot(x, Exact[0, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[0, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
-    ax.set_ylabel('$u(t,x)$')    
-    ax.set_title('$t = 0.25$', fontsize = 10)
+    ax.set_ylabel('$u(t, x)$')
+    ax.set_title('$t = 0$', fontsize=10)
     ax.axis('square')
-    ax.set_xlim([-1.1,1.1])
-    ax.set_ylim([-1.1,1.1])
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
     
     ax = plt.subplot(gs1[0, 1])
-    ax.plot(x,Exact[50,:], 'b-', linewidth = 2, label = 'Exact')       
-    ax.plot(x,U_pred[50,:], 'r--', linewidth = 2, label = 'Prediction')
+    ax.plot(x, Exact[50, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[50, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
-    ax.set_ylabel('$u(t,x)$')
+    ax.set_ylabel('$u(t, x)$')
     ax.axis('square')
-    ax.set_xlim([-1.1,1.1])
-    ax.set_ylim([-1.1,1.1])
-    ax.set_title('$t = 0.50$', fontsize = 10)
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
+    ax.set_title('$t = 0.50$', fontsize=10)
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=5, frameon=False)
     
     ax = plt.subplot(gs1[0, 2])
-    ax.plot(x,Exact[75,:], 'b-', linewidth = 2, label = 'Exact')       
-    ax.plot(x,U_pred[75,:], 'r--', linewidth = 2, label = 'Prediction')
+    ax.plot(x, Exact[-1, :], 'b-', linewidth=2, label='Exact')
+    ax.plot(x, U_pred[-1, :], 'r--', linewidth=2, label='Prediction')
     ax.set_xlabel('$x$')
-    ax.set_ylabel('$u(t,x)$')
+    ax.set_ylabel('$u(t, x)$')
     ax.axis('square')
-    ax.set_xlim([-1.1,1.1])
-    ax.set_ylim([-1.1,1.1])    
-    ax.set_title('$t = 0.75$', fontsize = 10)
+    ax.set_xlim([0, np.pi])
+    ax.set_ylim([0, 0.7])
+    ax.set_title('$t=3.14$', fontsize=10)
     
     # Saving Figure    
     print('\nFigure saved to ' + filepath + filename)
     plt.savefig(filepath + filename, dpi=300)
-    
-    # savefig('./figures/Burgers')  
+
     
 
 
