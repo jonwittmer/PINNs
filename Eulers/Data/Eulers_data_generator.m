@@ -61,6 +61,8 @@ Enersol(:,temporal_indices_to_be_removed) = [];
 
 save('Abgrall_eulers','x','t','rhosol','usol','Enersol')
 
+fprintf('Solution saved')
+
 %% =======================================================================%
 %                               Plotting
 %=========================================================================%
