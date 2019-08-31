@@ -24,8 +24,6 @@ usol = u_tstep;
 Enersol = Ener_tstep;
 t = time_steps_storage';
 
-% save('Abgrall_eulers_accurate_solution','x','t','rho_tstep','u_tstep','Ener_tstep','time_steps_storage')
-
 %=== Removing Duplicate Spatial Data ===%
 x = x(:);
 [~, ind] = unique(x); % identify indices for unique entries of x
@@ -68,42 +66,35 @@ fprintf('Solution saved')
 %% =======================================================================%
 %                               Plotting
 %=========================================================================%
-Fig_rhosol = figure;
-Fig_usol = figure;
+% Fig_rhosol = figure;
+% title('rho')
+% 
+% Fig_usol = figure;
+% title('u')
+% 
 % Fig_Enersol = figure;
-Fig_psol = figure;
-
-for tstep=1:length(t)
-    figure(Fig_rhosol);
-    plot(x,rhosol(:,tstep));
-    title('Density')
-    
-    pause(0.1)
-end
-
-for tstep=1:length(t)
-    figure(Fig_usol)
-    plot(x,usol(:,tstep))
-    title('Velocity')
-    
-    pause(0.1)
-end
-
+% title('Ener')
+% 
 % for tstep=1:length(t)
-%     figure(Fig_Enersol)
-%     plot(x,Enersol(:,tstep));
-%     title('Energy')
+%     figure(Fig_rhosol);
+%     plot(x,rhosol(:,tstep));
+%     title('Density')
 %     
 %     pause(0.1)
 % end
-
-gamma = 1.4;
-psol = (gamma - 1)*(Enersol - (1/2)*rhosol.*(usol.^2));
-
-for tstep=1:length(t)
-    figure(Fig_psol)
-    plot(x,psol(:,tstep));
-    title('Pressure')
-    
-    pause(0.1)
-end
+% 
+% for tstep=1:length(t)
+%     figure(Fig_usol)
+%     plot(x,usol(:,tstep))
+%     title('Velocity')
+%     
+%     pause(0.1)
+% end
+% 
+% for tstep=1:length(t)
+%     figure(Fig_Enersol)
+%     plot(x,Enersol(:,tstep));
+%     title('Ener')
+%     
+%     pause(0.1)
+% end
