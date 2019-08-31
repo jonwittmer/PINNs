@@ -5,14 +5,14 @@ clc
 %=== Spatial Domain ===%
 spatial_domain_leftboundary = 0;
 spatial_domain_rightboundary = pi;
-n_gridpoints = 400;
+n_gridpoints = 256;
 x = spatial_domain_leftboundary:(spatial_domain_rightboundary/n_gridpoints):spatial_domain_rightboundary;
 x = x';
 
 %=== Time Domain ===%
 temporal_domain_starttime = 0;
 temporal_domain_finaltime = pi;
-n_timesteps = 400;
+n_timesteps = 256;
 t = temporal_domain_starttime:(temporal_domain_finaltime/n_timesteps):temporal_domain_finaltime;
 t = t';
 
@@ -57,7 +57,7 @@ for time=1:size(t,1)
     u = utemp;
     usol(:,time) = u;
     current_time = t(time);
-    dt = CFL*dx/max(u);
+    %dt = CFL*dx/max(u);
     set(hch,'XData',x+current_time*initial_condition(x));
     set(hlf,'YData',u);
     set(ht,'String',sprintf('t = %0.2f',current_time));
