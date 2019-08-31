@@ -24,7 +24,7 @@ else:
     ind = int(float(data.tail(1).epoch))
 
 # original data from matlab solution: defines plotting grid
-original_data = scipy.io.loadmat('../../../../../Data/Abgrall_burgers_shock.mat')
+original_data = scipy.io.loadmat('../../../../../Data/burgers_shock.mat')
 x = original_data['x'].flatten()[:, None]
 t = original_data['t'].flatten()[:, None]
 Exact = np.real(original_data['usol']).T
@@ -61,14 +61,14 @@ fig.colorbar(h, cax=cax)
 
 line = np.linspace(x.min(), x.max(), 2)[:, None]
 ax.plot(t[0] * np.ones((2, 1)), line, 'w-', linewidth=1)
-ax.plot(t[128] * np.ones((2, 1)), line, 'w-', linewidth=1)
-ax.plot(t[-10] * np.ones((2, 1)), line, 'w-', linewidth=1)
+ax.plot(t[49] * np.ones((2, 1)), line, 'w-', linewidth=1)
+ax.plot(t[-2] * np.ones((2, 1)), line, 'w-', linewidth=1)
 
 ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
 # ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
-ax.set_title('$L^1$ Regularization with ADMM\n $u(t,x)$', fontsize=18)
+ax.set_title('$L^1$ Regularization with ADMM\n $u(t,x)$ - 1,000,000 epochs', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)
@@ -81,27 +81,27 @@ ax.plot(x, U_pred[0, :], 'r--', linewidth=2, label='Prediction')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u(t,x)$')
 ax.set_title('$t = 0$', fontsize=18)
-ax.set_xlim([-0.1, np.pi + 0.1])
-ax.set_ylim([-0.1, 1.1])
+ax.set_xlim([-1.1, 1.0 + 0.1])
+ax.set_ylim([-1.1, 1.1])
 
 ax = plt.subplot(gs1[0, 1])
-ax.plot(x, Exact[128, :], 'b-', linewidth=2, label='Exact')
-ax.plot(x, U_pred[128, :], 'r--', linewidth=2, label='Prediction')
+ax.plot(x, Exact[49, :], 'b-', linewidth=2, label='Exact')
+ax.plot(x, U_pred[49, :], 'r--', linewidth=2, label='Prediction')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u(t,x)$')
-ax.set_xlim([-0.1, np.pi + 0.1])
-ax.set_ylim([-0.1, 1.1])
-ax.set_title(f'$t = {np.round(t[128],2)}$', fontsize=18)
+ax.set_xlim([-1.1, 1.0 + 0.1])
+ax.set_ylim([-1.1, 1.1])
+ax.set_title(f'$t = {np.round(t[49],2)}$', fontsize=18)
 ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=5, frameon=False)
 
 ax = plt.subplot(gs1[0, 2])
-ax.plot(x, Exact[-10, :], 'b-', linewidth=2, label='Exact')
-ax.plot(x, U_pred[-10, :], 'r--', linewidth=2, label='Prediction')
+ax.plot(x, Exact[-2, :], 'b-', linewidth=2, label='Exact')
+ax.plot(x, U_pred[-2, :], 'r--', linewidth=2, label='Prediction')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u(t,x)$')
-ax.set_xlim([-0.1, np.pi + 0.1])
-ax.set_ylim([-0.1, 1.1])
-ax.set_title(f'$t = {np.round(t[-10], 2)}$', fontsize=18)
+ax.set_xlim([-1.1, 1.0 + 0.1])
+ax.set_ylim([-1.1, 1.1])
+ax.set_title(f'$t = {np.round(t[-2], 2)}$', fontsize=18)
 
 # plt.savefig(filename, dpi=300)
 # plt.close()
