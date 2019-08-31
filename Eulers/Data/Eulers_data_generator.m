@@ -76,6 +76,7 @@ title('Ener')
 for tstep=1:length(t)
     figure(Fig_rhosol);
     plot(x,rhosol(:,tstep));
+    title('Density')
     
     pause(0.1)
 end
@@ -83,7 +84,7 @@ end
 for tstep=1:length(t)
     figure(Fig_usol)
     plot(x,usol(:,tstep))
-    title('u')
+    title('Velocity')
     
     pause(0.1)
 end

@@ -25,11 +25,11 @@ rho_lax = ones(Np,K).*(0.445*(cx<=0.5) + 0.5*(cx>0.5));
 u_lax = ones(Np,K).*(0.698*(cx<=0.5) + 0*(cx>0.5));
 p_lax = ones(Np,K).*(3.528*(cx<=0.5) + 0.571*(cx>0.5));
 
-mu = 0.3; % Linear combination parameter
+mu = 0; % Linear combination parameter
 
-rho = mu*rho_lax + (1-mu)*rho_sod;
-u = mu*u_lax + (1-mu)*u_sod;
-p = mu*p_lax + (1-mu)*p_sod;
+rho = mu*rho_sod + (1-mu)*rho_lax;
+u = mu*u_sod + (1-mu)*u_lax;
+p = mu*p_sod + (1-mu)*p_lax;
 
 rhou = rho.*u;
 Ener = p./(gamma-1.0) + (1/2)*rho.*u.^2;
