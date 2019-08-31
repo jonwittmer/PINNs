@@ -64,35 +64,35 @@ save('Abgrall_eulers','x','t','rhosol','usol','Enersol')
 %% =======================================================================%
 %                               Plotting
 %=========================================================================%
-Fig_rhosol = figure;
-title('rho')
-
-Fig_usol = figure;
-title('u')
-
-Fig_Enersol = figure;
-title('Ener')
-
-for tstep=1:length(t)
-    figure(Fig_rhosol);
-    plot(x,rhosol(:,tstep));
-    title('Density')
-    
-    pause(0.1)
-end
-
-for tstep=1:length(t)
-    figure(Fig_usol)
-    plot(x,usol(:,tstep))
-    title('Velocity')
-    
-    pause(0.1)
-end
-
-for tstep=1:length(t)
-    figure(Fig_Enersol)
-    plot(x,Enersol(:,tstep));
-    title('Ener')
-    
-    pause(0.1)
-end
+% Fig_rhosol = figure;
+% title('rho')
+% 
+% Fig_usol = figure;
+% title('u')
+% 
+% Fig_Enersol = figure;
+% title('Ener')
+% 
+% for tstep=1:length(t)
+%     figure(Fig_rhosol);
+%     plot(x,rhosol(:,tstep));
+%     title('Density')
+%     
+%     pause(0.1)
+% end
+% 
+% for tstep=1:length(t)
+%     figure(Fig_usol)
+%     plot(x,usol(:,tstep))
+%     title('Velocity')
+%     
+%     pause(0.1)
+% end
+% 
+% for tstep=1:length(t)
+%     figure(Fig_Enersol)
+%     plot(x,Enersol(:,tstep));
+%     title('Ener')
+%     
+%     pause(0.1)
+% end
