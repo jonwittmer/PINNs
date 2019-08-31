@@ -30,6 +30,8 @@ t = original_data['t'].flatten()[:, None]
 Exact = np.real(original_data['usol']).T
 X, T = np.meshgrid(x, t)
 
+print('Exact size: ' + str(Exact.shape))
+
 # select the relevant data
 if not (data.x.dtype == np.float64 or data.x.dtype == np.int64):
     data = data[~(data.x.str.contains('x', na=False))]
@@ -68,7 +70,7 @@ ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
 # ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
-ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - 1,000,000 epochs', fontsize=18)
+ax.set_title('$L^1$ Regularization with ADMM\n $u(t,x)$', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)

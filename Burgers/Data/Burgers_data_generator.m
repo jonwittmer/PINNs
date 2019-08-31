@@ -57,7 +57,7 @@ for time=1:size(t,1)
     u = utemp;
     usol(:,time) = u;
     current_time = t(time);
-    dt = CFL*dx/max(u);
+    %dt = CFL*dx/max(u);
     set(hch,'XData',x+current_time*initial_condition(x));
     set(hlf,'YData',u);
     set(ht,'String',sprintf('t = %0.2f',current_time));
