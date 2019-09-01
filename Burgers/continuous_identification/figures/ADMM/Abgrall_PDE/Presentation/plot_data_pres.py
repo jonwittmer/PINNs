@@ -23,6 +23,8 @@ if len(sys.argv) > 2:
 else:
     ind = int(float(data.tail(1).epoch))
 
+print("epochs: " + str(ind))
+    
 # original data from matlab solution: defines plotting grid
 original_data = scipy.io.loadmat('../../../../../Data/Abgrall_burgers_shock.mat')
 x = original_data['x'].flatten()[:, None]
@@ -68,7 +70,7 @@ ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
 # ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
-ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - 1,000,000 epochs', fontsize=18)
+ax.set_title('$L^1$ Regularization with ADMM\n $u(t,x)$', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)

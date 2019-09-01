@@ -31,7 +31,7 @@ class Parameters:
     N_f    = 1000
     rho    = 10.0
     epochs = 1e6
-    gpu    = '1'
+    gpu    = '0'
 
 
 class PhysicsInformedNN:
@@ -178,7 +178,7 @@ class PhysicsInformedNN:
                             
             # save figure every so often so if it crashes, we have some results
             if it % 10000 == 0:
-                #self.plot_results()
+                # self.plot_results()
                 self.record_data(it)
                 self.save_data()
                 

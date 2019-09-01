@@ -33,7 +33,6 @@ class Parameters:
     epochs = 1e5
     gpu    = '3'
 
-
 class PhysicsInformedNN:
     # Initialize the class
     def __init__(self, params):
@@ -267,9 +266,9 @@ class PhysicsInformedNN:
         p = self.params
         self.filename = f'figures/ADMM/Abgrall_PDE/Presentation/LBF_Long_Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
-        self.layers = [2, 200, 200, 200, 200, 200, 200, 200, 200, 1]
+        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
-        self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
+        self.data = scipy.io.loadmat('../Data/TwoSin_burgers_shock.mat')
         
         self.t = self.data['t'].flatten()[:, None]
         self.x = self.data['x'].flatten()[:, None]

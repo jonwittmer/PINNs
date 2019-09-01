@@ -68,7 +68,7 @@ ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
 # ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
-ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - 1,000,000 epochs', fontsize=18)
+ax.set_title('L1 Regularization with ADMM\n $u(t,x)$', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)
