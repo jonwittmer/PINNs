@@ -12,16 +12,16 @@ import sys
 
 # NN data
 if len(sys.argv) < 2:
-    raise Exception("First argument must be the file name")
+    raise Exception("The first argument must be the file name")
 
-filename = str(sys.argv[1])
+filename = sys.argv[1]
 data = pd.read_csv(filename)
 
 # check if custom index
 if len(sys.argv) > 2:
     ind  = int(sys.argv[2])
 else:
-    ind = int(data.tail(1).epoch)
+    ind = int(float(data.tail(1).epoch))
 
 # original data from matlab solution: defines plotting grid
 original_data = scipy.io.loadmat('../../../Data/burgers_shock.mat')
@@ -33,6 +33,7 @@ X, T = np.meshgrid(x, t)
 # select the relevant data
 if not (data.x.dtype == np.float64 or data.x.dtype == np.int64):
     data = data[~(data.x.str.contains('x', na=False))]
+
 
 data.epoch = pd.to_numeric(data.epoch)
 filtered_data = data[abs(data.epoch - ind) < 1]
@@ -59,49 +60,48 @@ cax = divider.append_axes("right", size="5%", pad=0.05)
 fig.colorbar(h, cax=cax)
 
 line = np.linspace(x.min(), x.max(), 2)[:, None]
-ax.plot(t[25] * np.ones((2, 1)), line, 'w-', linewidth=1)
-ax.plot(t[50] * np.ones((2, 1)), line, 'w-', linewidth=1)
-ax.plot(t[75] * np.ones((2, 1)), line, 'w-', linewidth=1)
+ax.plot(t[0] * np.ones((2, 1)), line, 'w-', linewidth=1)
+ax.plot(t[49] * np.ones((2, 1)), line, 'w-', linewidth=1)
+ax.plot(t[-2] * np.ones((2, 1)), line, 'w-', linewidth=1)
 
 ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
-ax.set_title('L2 Regularization\n $u(t,x)$ - 1,000,000 epochs', fontsize=18)
+# ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
+ax.set_title('$L^2$ Regularization\n $u(t,x)$', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)
+# gs1.update(top=1 - 1.0 / 3.0 - 0.1, bottom=1.0 - 2.0 / 3.0, left=0.1, right=0.9, wspace=0.5)
 gs1.update(top=1 - 1.0 / 2.0 - 0.1, bottom=0.1, left=0.1, right=0.9, wspace=0.5)
 
 ax = plt.subplot(gs1[0, 0])
-ax.plot(x, Exact[25, :], 'b-', linewidth=2, label='Exact')
-ax.plot(x, U_pred[25, :], 'r--', linewidth=2, label='Prediction')
+ax.plot(x, Exact[0, :], 'b-', linewidth=2, label='Exact')
+ax.plot(x, U_pred[0, :], 'r--', linewidth=2, label='Prediction')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u(t,x)$')
-ax.set_title('$t = 0.25$', fontsize=18)
-ax.axis('square')
-ax.set_xlim([-1.1, 1.1])
+ax.set_title('$t = 0$', fontsize=18)
+ax.set_xlim([-1.1, 1.0 + 0.1])
 ax.set_ylim([-1.1, 1.1])
 
 ax = plt.subplot(gs1[0, 1])
-ax.plot(x, Exact[50, :], 'b-', linewidth=2, label='Exact')
-ax.plot(x, U_pred[50, :], 'r--', linewidth=2, label='Prediction')
+ax.plot(x, Exact[49, :], 'b-', linewidth=2, label='Exact')
+ax.plot(x, U_pred[49, :], 'r--', linewidth=2, label='Prediction')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u(t,x)$')
-ax.axis('square')
-ax.set_xlim([-1.1, 1.1])
+ax.set_xlim([-1.1, 1.0 + 0.1])
 ax.set_ylim([-1.1, 1.1])
-ax.set_title('$t = 0.50$', fontsize=18)
+ax.set_title(f'$t = {np.round(t[49],2)}$', fontsize=18)
 ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=5, frameon=False)
 
 ax = plt.subplot(gs1[0, 2])
-ax.plot(x, Exact[75, :], 'b-', linewidth=2, label='Exact')
-ax.plot(x, U_pred[75, :], 'r--', linewidth=2, label='Prediction')
+ax.plot(x, Exact[-2, :], 'b-', linewidth=2, label='Exact')
+ax.plot(x, U_pred[-2, :], 'r--', linewidth=2, label='Prediction')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u(t,x)$')
-ax.axis('square')
-ax.set_xlim([-1.1, 1.1])
+ax.set_xlim([-1.1, 1.0 + 0.1])
 ax.set_ylim([-1.1, 1.1])
-ax.set_title('$t = 0.75$', fontsize=18)
+ax.set_title(f'$t = {np.round(t[-2], 2)}$', fontsize=18)
 
 # plt.savefig(filename, dpi=300)
 # plt.close()
