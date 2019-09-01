@@ -150,10 +150,12 @@ class PhysicsInformedNN:
         start_time = time.time()
         it = 0
         loss_value = 1000
-
+        
+        # store current weights to be updated later using IRLS
+        weights_current = []
+    
         while it < nIter:
-            # store current weights to be updated later using IRLS
-            weights_current = self.weights                        
+            weights_current = self.weights
             # perform optimization
             self.sess.run(self.train_op_Adam, tf_dict)                    
             # print to monitor results
@@ -171,7 +173,11 @@ class PhysicsInformedNN:
                 self.save_data()
                 
             # for iteratively reweighted least squares, the new weights are equal to the old weights plus the minimizer of the IRLS loss function    
-            self.weights = weights_current + self.weights     
+            new_weights = []
+            for l in range(0, len(self.weights)): 
+                new_weights.append(weights_current[l] + self.weights[l]) 
+            
+            self.weights = new_weights   
             
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
