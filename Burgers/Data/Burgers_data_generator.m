@@ -16,7 +16,7 @@ n_timesteps = 256;
 t = temporal_domain_starttime:(temporal_domain_finaltime/n_timesteps):temporal_domain_finaltime;
 t = t';
 
-mu = 0.575;
+mu = 0.65;
 usol = zeros(size(x,1),size(t,1));
 
 %============================================================================================================
@@ -57,7 +57,6 @@ for time=1:size(t,1)
     u = utemp;
     usol(:,time) = u;
     current_time = t(time);
-    dt = CFL*dx/max(u);
     set(hch,'XData',x+current_time*initial_condition(x));
     set(hlf,'YData',u);
     set(ht,'String',sprintf('t = %0.2f',current_time));

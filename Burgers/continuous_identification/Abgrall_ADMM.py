@@ -27,9 +27,9 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_u    = 200
+    N_u    = 100
     N_f    = 1000
-    rho    = 40.0
+    rho    = 10.0
     epochs = 1e5
     gpu    = '3'
 
@@ -66,11 +66,12 @@ class PhysicsInformedNN:
         # 2nd order optimizer used once we get "close" to the solution
         self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
                                                            method='L-BFGS-B',
-                                                           options={'maxiter': 50000,
+                                                           options={'maxiter': 5000,
                                                                     'maxfun': 50000,
                                                                     'maxcor': 50,
                                                                     'maxls': 50,
-                                                                    'ftol':1.0 * np.finfo(float).eps})
+                                                                    'ftol':1e-7})
+                                                                    # 'ftol':1.0 * np.finfo(float).eps})
 
         # set configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
@@ -210,11 +211,12 @@ class PhysicsInformedNN:
         while epoch < nEpochs:
             
             # perform the admm iteration
-            if epoch < 50000:
+            if epoch <= 50000:
                 self.sess.run(self.train_op_Adam, tf_dict)
             else:
                 self.lbfgs.minimize(self.sess, feed_dict=tf_dict)
-            
+                #self.sess.run(self.train_op_Adam, tf_dict)
+
             # new batch of collocation points
             self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
             self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
@@ -232,12 +234,17 @@ class PhysicsInformedNN:
                 print('It: %d, Loss: %.3e, r(w) - z: %.3f ,Time: %.2f' %
                       (epoch, loss_value, r_z, elapsed))
                 start_time = time.time()
-                            
+            
             # save figure every so often so if it crashes, we have some results
-            if epoch % 10000 == 0:
-                # self.plot_results()
-                self.record_data(epoch)
-                self.save_data()
+            if epoch < 50000:
+                if epoch % 1000 == 0:
+                    # self.plot_results()
+                    self.record_data(epoch)
+                    self.save_data()
+            else: 
+                if epoch % 100 == 0:
+                    self.record_data(epoch)
+                    self.save_data()
 
             # increase the number of Adam training steps - cap at 5 for now
             # if epoch % 10000 == 0 and num_Adam_iters <= 10:
@@ -258,7 +265,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/ADMM/Abgrall_PDE/Wide_lbfgs/Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Presentation/LBF_Long_Nu{p.N_u}_Nf{p.N_f}_rho{int(p.rho)}_e{int(p.epochs)}.png'
 
         self.layers = [2, 200, 200, 200, 200, 200, 200, 200, 200, 1]
         

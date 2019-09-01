@@ -27,11 +27,11 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_u    = 200
+    N_u    = 100
     N_f    = 1000
-    rho    = 40.0
-    epochs = 1e5
-    gpu    = '3'
+    rho    = 10.0
+    epochs = 1e6
+    gpu    = '1'
 
 
 class PhysicsInformedNN:
@@ -59,8 +59,6 @@ class PhysicsInformedNN:
         self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
                     1 / self.N_f * tf.pow(tf.norm(self.f_pred, 1), 2)
         
-        self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
-
         self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss)
         
@@ -83,10 +81,6 @@ class PhysicsInformedNN:
         # randomly choose collocations points
         self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
         self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
-
-        # assign the real initial value of z = r(w) 
-        self.sess.run(self.z.assign(self.f_pred), 
-                      feed_dict={self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys})
 
         self.df = pd.DataFrame()
 
@@ -238,9 +232,9 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/L1/Abgrall_PDE/Deep/Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
+        self.filename = f'figures/ADMM/Abgrall_PDE/Presentation/L1_Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
 
-        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]
+        self.layers = [2, 200, 200, 200, 200, 200, 200, 200, 200, 1]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
         
