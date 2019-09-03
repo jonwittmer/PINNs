@@ -24,7 +24,7 @@ usol = zeros(size(x,1),size(t,1));
 
 mx = size(x,1); % number of nodes in x
 CFL = 0.95; % Courant number
-initial_condition = @(x) (mu*abs(sin(2*x))+0.1).*(0<=x).*(x<=2*pi); % initial condition
+initial_condition = @(x) (mu*abs(sin(2*x))+0.1).*(0<=x).*(x<=pi); % initial condition
 tend = t(end); % final time
 
 %=== Initialization ===%
@@ -53,10 +53,11 @@ for time=1:size(t,1)
     end
     utemp(1) = utemp(mx-1); % periodic boundary conditions
     utemp(mx) = utemp(2);   % periodic boundary conditions
-    
+
     u = utemp;
     usol(:,time) = u;
     current_time = t(time);
+
     set(hch,'XData',x+current_time*initial_condition(x));
     set(hlf,'YData',u);
     set(ht,'String',sprintf('t = %0.2f',current_time));

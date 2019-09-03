@@ -49,7 +49,7 @@ class PhysicsInformedNN:
        
         # Initialize training variables
         self.weights, self.biases = self.initialize_NN(self.layers)
-        self.initialize_variables()
+        self.initialize_placeholders()
 
         # Evaluate outputs of network
         rho_u_E_pred = self.net_rho_u_E(self.x_data_tf, self.t_data_tf)
@@ -95,7 +95,7 @@ class PhysicsInformedNN:
 
         self.run_NN()
 
-    def initialize_variables(self):        
+    def initialize_placeholders(self):        
         # placeholders for training data
         self.x_data_tf = tf.placeholder(tf.float32, shape=[None, self.x_data.shape[1]])
         self.t_data_tf = tf.placeholder(tf.float32, shape=[None, self.t_data.shape[1]])
@@ -196,9 +196,6 @@ class PhysicsInformedNN:
         f3 = E_t + uE_x + up_x
         
         return f1, f2, f3
-    
-    def callback(self, loss,):
-        print('Loss: %e, l1: %.5f, l2: %.5f' % (loss))
         
     def compute_z(self, f_pred, lagrange):
         val = f_pred + lagrange / self.pen
@@ -346,12 +343,12 @@ class PhysicsInformedNN:
         print('Error u: %e %%' % (self.error_u*100))
         print('Error E: %e %%' % (self.error_E*100))
                 
-    def plot_results(self): # THIS NEEDS CHANGING
+    def plot_results_u(self): # THIS NEEDS CHANGING
         print(self.filename)
         plt.rc('text', usetex=True)
         
         # calculate required statistics for plotting
-        self.rho_pred_val, self.u_pred_val, self.E_pred_val, self.f1_pred_val, self.f2_pred_val, self.f3_pred_val = self.predict(self.X_star)
+        _, self.u_pred_val, _, self.f1_pred_val, _,_ = self.predict(self.X_star)
         self.u_pred_grid = griddata(self.X_star, self.u_pred_val.flatten(), (self.X, self.T), method='cubic')
         
         fig, ax = plt.subplots(figsize=(10, 10))
