@@ -27,11 +27,11 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_data = 200
-    N_f    = 1000
+    N_data = 400
+    N_f    = 10000
     pen    = 40.0
-    epochs = 1e5
-    gpu    = '3'
+    epochs = 1e6
+    gpu    = '1'
 
 
 class PhysicsInformedNN:
@@ -217,10 +217,10 @@ class PhysicsInformedNN:
         
         # training 
         start_time = time.time()
-        epoch = 1
+        it = 1
                    
         # train with physics
-        while epoch < nEpochs:
+        while it < nEpochs:
             
             # perform the admm iteration
             self.sess.run(self.train_op_Adam, tf_dict)
@@ -239,20 +239,20 @@ class PhysicsInformedNN:
             self.sess.run(self.lagrange3_update, tf_dict)
                     
             # print to monitor results
-            if epoch % 1000 == 0:
+            if it % 1000 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss, tf_dict)
                 print('It: %d, Loss: %.3e, Time: %.2f' %
-                      (epoch, loss_value, elapsed))
+                      (it, loss_value, elapsed))
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
-            if epoch % 10000 == 0:
+            if it % 10000 == 0:
                 # self.plot_results()
-                self.record_data(epoch)
+                self.record_data(it)
                 self.save_data()
 
-            epoch += 1
+            it += 1
 
     def predict(self, X_star):
         
@@ -260,11 +260,11 @@ class PhysicsInformedNN:
                    self.x_phys_tf: X_star[:, 0:1], self.t_phys_tf: X_star[:, 1:2]}
         
         rho_pred_val = self.sess.run(self.rho_pred, tf_dict)
-        u_pred_val = self.sess.run(self.u_pred, tf_dict)
-        E_pred_val = self.sess.run(self.E_pred, tf_dict)
-        f1_pred_val = self.sess.run(self.f1_pred, tf_dict)
-        f2_pred_val = self.sess.run(self.f2_pred, tf_dict)
-        f3_pred_val = self.sess.run(self.f3_pred, tf_dict)
+        u_pred_val   = self.sess.run(self.u_pred, tf_dict)
+        E_pred_val   = self.sess.run(self.E_pred, tf_dict)
+        f1_pred_val  = self.sess.run(self.f1_pred, tf_dict)
+        f2_pred_val  = self.sess.run(self.f2_pred, tf_dict)
+        f3_pred_val  = self.sess.run(self.f3_pred, tf_dict)
         
         return rho_pred_val, u_pred_val, E_pred_val, f1_pred_val, f2_pred_val, f3_pred_val
 
