@@ -29,8 +29,8 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_u    = 100
-    N_f    = 5000
-    rho    = 40.0
+    N_f    = 1000
+    rho    = 10.0
     epochs = 1e5
     gpu    = '3'
 
@@ -67,7 +67,7 @@ class PhysicsInformedNN:
         # set l-bfgs optimizer
         self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss_IRLS,
                                                              method='L-BFGS-B',
-                                                             options={'maxiter':1000,
+                                                             options={'maxiter':100000,
                                                                       'maxfun':50000,
                                                                       'maxcor':50,
                                                                       'maxls':50,
@@ -118,7 +118,7 @@ class PhysicsInformedNN:
         num_layers = len(layers)
         for l in range(0, num_layers - 1):
             W = self.xavier_init(size=[layers[l], layers[l + 1]])
-            b = tf.Variable(tf.zeros([1, layers[l + 1]], dtype=tf.float32), dtype=tf.float32)
+            b = tf.Variable(tf.ones([1, layers[l + 1]], dtype=tf.float32), dtype=tf.float32)
             weights.append(W)
             biases.append(b)
         return weights, biases
@@ -175,23 +175,21 @@ class PhysicsInformedNN:
 
         while it < nIter:
             # perform optimization
-            #self.sess.run(self.train_op_Adam, tf_dict)                    
             self.lbfgs.minimize(self.sess, feed_dict=tf_dict)
-
-            # print to monitor results
+            
             if it % 10 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss_IRLS, tf_dict)
                 print('It: %d, Loss: %.3e, Time: %.2f' %
                       (it, loss_value, elapsed))
-                start_time = time.time()
+                    start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
-            if it % 10 == 0:
+            if it % 100 == 0:
                 #self.plot_results()
                 self.record_data(it)
                 self.save_data()
-                
+
             # for iteratively reweighted least squares, the new weights are equal to the old weights plus the minimizer of the IRLS loss function    
             self.sess.run(self.update_weights, feed_dict=tf_dict)
             
@@ -203,6 +201,7 @@ class PhysicsInformedNN:
             it += 1
 
     def predict(self, X_star):        
+        
         tf_dict = {self.x_data_tf: X_star[:, 0:1], self.t_data_tf: X_star[:, 1:2],
                    self.x_phys_tf: X_star[:, 0:1], self.t_phys_tf: X_star[:, 1:2]}        
         u_star = self.sess.run(self.u_pred, tf_dict)
@@ -212,11 +211,11 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/IRLS/Raissi_PDE/Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
+        self.filename = f'figures/IRLS/Abgrall_PDE/Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
-        self.data = scipy.io.loadmat('../Data/burgers_shock.mat')
+        self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
         
         self.t = self.data['t'].flatten()[:, None]
         self.x = self.data['x'].flatten()[:, None]
@@ -263,85 +262,6 @@ class PhysicsInformedNN:
         self.error_u = np.linalg.norm(self.u_star - self.u_pred_val, 2) / np.linalg.norm(self.u_star, 2)
         print('Error u: %e %%' % (self.error_u*100))
                 
-    def plot_results(self):
-        print(self.filename)
-        plt.rc('text', usetex=True)
-        
-        # calculate required statistics for plotting
-        self.u_pred_val, self.f_pred_val = self.predict(self.X_star)
-        self.U_pred = griddata(self.X_star, self.u_pred_val.flatten(), (self.X, self.T), method='cubic')
-        
-        fig, ax = plt.subplots(figsize=(10, 10))
-        ax.axis('off')
-        
-        ####### Row 0: u(t,x) ##################
-        gs0 = gridspec.GridSpec(1, 2)
-        gs0.update(top=1 - 0.06, bottom=1 - 1.0 / 3.0 + 0.06, left=0.15, right=0.85, wspace=0)
-        ax = plt.subplot(gs0[:, :])
-        
-        h = ax.imshow(self.U_pred.T, interpolation='nearest', cmap='rainbow',
-                      extent=[self.t.min(), self.t.max(), self.x.min(), self.x.max()],
-                      origin='lower', aspect='auto')
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(h, cax=cax)
-        
-        ax.plot(self.X_u_train[:, 1], self.X_u_train[:, 0], 'kx', label='Data (%d points)' % (self.u_train.shape[0]), markersize=2, clip_on=False)
-        
-        line = np.linspace(self.x.min(), self.x.max(), 2)[:, None]
-        ax.plot(self.t[25] * np.ones((2, 1)), line, 'w-', linewidth=1)
-        ax.plot(self.t[50] * np.ones((2, 1)), line, 'w-', linewidth=1)
-        ax.plot(self.t[75] * np.ones((2, 1)), line, 'w-', linewidth=1)
-        
-        ax.set_xlabel('$t$')
-        ax.set_ylabel('$x$')
-        ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
-        ax.set_title('$u(t,x)$', fontsize=18)
-        
-        ####### Row 1: u(t,x) slices ##################
-        gs1 = gridspec.GridSpec(1, 3)
-        gs1.update(top=1 - 1.0 / 3.0 - 0.1, bottom=1.0 - 2.0 / 3.0, left=0.1, right=0.9, wspace=0.5)
-        
-        ax = plt.subplot(gs1[0, 0])
-        ax.plot(self.x, self.Exact[25, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.U_pred[25, :], 'r--', linewidth=2, label='Prediction')
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$u(t,x)$')
-        ax.set_title('$t = 0.25$', fontsize=18)
-        ax.axis('square')
-        ax.set_xlim([-1.1, 1.1])
-        ax.set_ylim([-1.1, 1.1])
-        
-        ax = plt.subplot(gs1[0, 1])
-        ax.plot(self.x, self.Exact[50, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.U_pred[50, :], 'r--', linewidth=2, label='Prediction')
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$u(t,x)$')
-        ax.axis('square')
-        ax.set_xlim([-1.1, 1.1])
-        ax.set_ylim([-1.1, 1.1])
-        ax.set_title('$t = 0.50$', fontsize=18)
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=5, frameon=False)
-        
-        ax = plt.subplot(gs1[0, 2])
-        ax.plot(self.x, self.Exact[75, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.U_pred[75, :], 'r--', linewidth=2, label='Prediction')
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$u(t,x)$')
-        ax.axis('square')
-        ax.set_xlim([-1.1, 1.1])
-        ax.set_ylim([-1.1, 1.1])
-        ax.set_title('$t = 0.75$', fontsize=18)
-                        
-        plt.savefig(self.filename, dpi=300)
-        plt.close()
-
-        print()
-        print('Figure saved to ' + self.filename)
-        print()
-
-        return
-
     def record_data(self, epoch_num):
         self.u_pred_val, self.f_pred_val = self.predict(self.X_star)
         x = self.X_star[:, 0]

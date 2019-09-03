@@ -27,11 +27,11 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_u    = 200
-    N_f    = 1000
+    N_u    = 400
+    N_f    = 10000
     rho    = 40.0
     epochs = 1e5
-    gpu    = '3'
+    gpu    = '0'
 
 
 class PhysicsInformedNN:
@@ -59,10 +59,17 @@ class PhysicsInformedNN:
         self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
                     1 / self.N_f * tf.pow(tf.norm(self.f_pred, 2), 2)
         
-        self.admm_misfit = tf.reduce_mean(tf.abs(self.f_pred - self.z))
-
         self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss)
+
+        # set l-bfgs optimizer
+        self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
+                                                             method='L-BFGS-B',
+                                                             options={'maxiter':100000,
+                                                                      'maxfun':50000,
+                                                                      'maxcor':50,
+                                                                      'maxls':50,
+                                                                      'ftol':1.0 * np.finfo(float).eps})        
         
         # set configuration options
         self.gpu_options = tf.GPUOptions(visible_device_list=self.params.gpu,
@@ -83,10 +90,6 @@ class PhysicsInformedNN:
         # randomly choose collocations points
         self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
         self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f, 1])
-
-        # assign the real initial value of z = r(w) 
-        self.sess.run(self.z.assign(self.f_pred), 
-                      feed_dict={self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys})
 
         self.df = pd.DataFrame()
 
@@ -225,6 +228,9 @@ class PhysicsInformedNN:
 
             epoch += 1
 
+        self.lbfgs.minimize(self.sess, feed_dict=tf_dict)
+        
+
     def predict(self, X_star):
         
         tf_dict = {self.x_data_tf: X_star[:, 0:1], self.t_data_tf: X_star[:, 1:2],
@@ -238,9 +244,9 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/L2/Abgrall_PDE/Deep/Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
+        self.filename = f'figures/L2/Abgrall_PDE/Normal/Nu{p.N_u}_Nf{p.N_f}_e{int(p.epochs)}.png'
 
-        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 1]
+        self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_burgers_shock.mat')
         
