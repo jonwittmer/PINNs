@@ -144,10 +144,10 @@ if __name__ == '__main__':
     if rank == 0:
         
         params = Parameters()
-        params.N_u = [100, 200, 400]
-        params.N_f = [100, 200, 500, 1000]#, 5000, 10000]
+        params.N_u = [400]
+        params.N_f = [1000, 5000, 10000, 20000]
         params.pen = [10.0]
-        params.epochs = [1e6]#, 1e5, 5e5, 1e6]
+        params.epochs = [1e6]
         
         sched = Scheduler(params)
         sched.nprocs = nprocs
@@ -162,7 +162,7 @@ if __name__ == '__main__':
             if status.tag == FLAGS.EXIT:
                 break
             
-            proc = subprocess.Popen(['./Euler_ADMM.py', f'{data.N_u}', f'{data.N_f}', f'{data.pen}', f'{int(data.epochs)}', f'{data.gpu}'])
+            proc = subprocess.Popen(['./Euler_L2.py', f'{data.N_u}', f'{data.N_f}', f'{int(data.epochs)}', f'{data.gpu}'])
             proc.wait()
             
             req = comm.isend([], 0, FLAGS.RUN_FINISHED)

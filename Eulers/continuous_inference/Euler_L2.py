@@ -319,7 +319,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/L2/Expo/Nu{params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/L2/Expo/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
              
     def run_NN(self):
         self.train(self.params.epochs)
@@ -352,8 +352,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         params.N_data = int(sys.argv[1])
         params.N_f = int(sys.argv[2])
-        params.pen = float(sys.argv[3])
-        params.epochs = int(sys.argv[4])
-        params.gpu = str(sys.argv[5])
+        params.epochs = int(sys.argv[3])
+        params.gpu = str(sys.argv[4])
     A = PhysicsInformedNN(params)
     

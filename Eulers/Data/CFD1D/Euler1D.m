@@ -15,7 +15,13 @@ mindx = min(x(2,:)-x(1,:));
 % Limit initial solution
 rho =SlopeLimitN(rho); rhou=SlopeLimitN(rhou); Ener=SlopeLimitN(Ener);
 
-time_counter = 1; % For storing solutions at each time step
+% State Storage
+rho_tstep(:,1) = rho(:);
+u_tstep(:,1) = rhou(:)./rho(:);
+Ener_tstep(:,1) = Ener(:);
+time_steps_storage(1) = 0;
+
+time_counter = 2; % For storing solutions at each time step
 
 % outer time step loop 
 while(time<FinalTime)
@@ -62,8 +68,8 @@ while(time<FinalTime)
   Ener_tstep(:,time_counter) = Ener(:);
   
   % Increment time and adapt timestep
-  time_steps_storage(time_counter) = time;
   time = time+dt;
+  time_steps_storage(time_counter) = time;
   time_counter = time_counter + 1;
   
 end

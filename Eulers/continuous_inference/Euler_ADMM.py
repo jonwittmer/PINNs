@@ -90,9 +90,9 @@ class PhysicsInformedNN:
         self.sess.run(init)
         
         # Randomly choose collocations points
-        self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f,1] )
+        self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.N_f,1] )
         #self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
-        self.t_phys = self.lb[1] + self.exponential_time_sample(np.zeros((self.params.N_f, 1)), self.ub[1] - self.lb[1])
+        self.t_phys = self.lb[1] + self.exponential_time_sample(np.zeros((self.N_f, 1)), self.ub[1] - self.lb[1])
 
         # Assign the real initial value of z = r(w) 
         self.sess.run([self.z1.assign(self.f1_pred),
@@ -382,7 +382,7 @@ class PhysicsInformedNN:
         self.u_train = self.u_train[idx,:]
         self.E_train = self.E_train[idx,:]
         '''
-        self.N_data = len(self.X_data_train[:,0])
+        self.params.N_data = len(self.X_data_train[:,0])
 
         # reassign here to conform to old workflow - NEEDS UPDATING
         self.x_data = self.X_data_train[:, 0:1]
@@ -392,7 +392,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/ADMM/Expo/Nu{params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/ADMM/Expo/Nu{self.params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
              
     def run_NN(self):
         self.train(self.params.epochs)
