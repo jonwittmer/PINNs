@@ -31,7 +31,7 @@ class Parameters:
     N_f    = 10000
     pen    = 10.0
     epochs = 1e6
-    gpu    = '2'
+    gpu    = '1'
 
 
 class PhysicsInformedNN:
@@ -74,7 +74,7 @@ class PhysicsInformedNN:
         
         # 2nd order optimizer used once we get "close" to the solution
         self.tol = tf.placeholder(tf.float64, shape=[])
-        self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss,
+        self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss_IRLS,
                                                            method='L-BFGS-B',
                                                            options={'maxiter': 10000,
                                                                     'maxfun': 50000,
@@ -342,7 +342,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/L2/Expo/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/IRLS/Expo/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
              
     def run_NN(self):
         self.train(self.params.epochs)
