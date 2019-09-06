@@ -283,10 +283,11 @@ class PhysicsInformedNN:
         self.lb = self.X_star.min(0)
         self.ub = self.X_star.max(0)
         
-        #=== Initial Condition ===#
+        # Initial Condition
         xx1 = np.hstack((self.X[0:1,:].T, self.T[0:1,:].T)) 
         uu1 = self.Exact[0:1,:].T 
         
+        # Left and Right Boundary Conditions
         xx2 = np.hstack((self.X[:,0:1], self.T[:,0:1])) 
         uu2 = self.Exact[:,0:1] 
         xx3 = np.hstack((self.X[:,-1:], self.T[:,-1:])) 
