@@ -27,7 +27,7 @@ class Scheduler:
         
         nvidia_smi.nvmlInit()
 
-        params_list = [params.N_u, params.N_f, params.pen, params.epochs]
+        params_list = [params.N_u, params.N_f, params.epochs]
         self.scenarios_list = self.Assemble_Parameters(params_list)
         
         # create list of parameters for calling
@@ -36,8 +36,7 @@ class Scheduler:
             p        = Parameters()
             p.N_u    = vals[0]
             p.N_f    = vals[1]
-            p.pen    = vals[2]
-            p.epochs = vals[3]
+            p.epochs = vals[2]
             self.scenarios.append(copy.deepcopy(p))
 
     def Assemble_Parameters(self, params):
@@ -130,7 +129,6 @@ class Scheduler:
         print()
         print(f'    p.N_u:    {p.N_u}')
         print(f'    p.N_f:    {p.N_f}')
-        print(f'    p.pen:    {p.pen}')
         print(f'    p.epochs: {p.epochs}')
         print(f'    p.gpu:    {p.gpu}')
         print()
@@ -145,8 +143,7 @@ if __name__ == '__main__':
         
         params = Parameters()
         params.N_u = [400]
-        params.N_f = [1000, 5000, 10000, 20000]
-        params.pen = [10.0]
+        params.N_f = [10000, 20000]
         params.epochs = [1e6]
         
         sched = Scheduler(params)

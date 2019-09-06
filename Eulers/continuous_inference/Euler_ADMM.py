@@ -408,85 +408,6 @@ class PhysicsInformedNN:
         print('Error u: %e %%' % (self.error_u*100))
         print('Error E: %e %%' % (self.error_E*100))
                 
-    def plot_results_u(self): # THIS NEEDS CHANGING
-        print(self.filename)
-        plt.rc('text', usetex=True)
-        
-        # calculate required statistics for plotting
-        _, self.u_pred_val, _, self.f1_pred_val, _,_ = self.predict(self.X_star)
-        self.u_pred_grid = griddata(self.X_star, self.u_pred_val.flatten(), (self.X, self.T), method='cubic')
-        
-        fig, ax = plt.subplots(figsize=(10, 10))
-        ax.axis('off')
-        
-        ####### Row 0: u(t,x) ##################
-        gs0 = gridspec.GridSpec(1, 2)
-        gs0.update(top=1 - 0.06, bottom=1 - 1.0 / 3.0 + 0.06, left=0.15, right=0.85, wspace=0)
-        ax = plt.subplot(gs0[:, :])
-        
-        h = ax.imshow(self.u_pred_grid.T, interpolation='nearest', cmap='rainbow',
-                      extent=[self.t.min(), self.t.max(), self.x.min(), self.x.max()],
-                      origin='lower', aspect='auto')
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
-        fig.colorbar(h, cax=cax)
-        
-        ax.plot(self.X_data_train[:, 1], self.X_data_train[:, 0], 'kx', label='Data (%d points)' % (self.u_train.shape[0]), markersize=2, clip_on=False)
-        
-        line = np.linspace(self.x.min(), self.x.max(), 2)[:, None]
-        ax.plot(self.t[25] * np.ones((2, 1)), line, 'w-', linewidth=1)
-        ax.plot(self.t[50] * np.ones((2, 1)), line, 'w-', linewidth=1)
-        ax.plot(self.t[75] * np.ones((2, 1)), line, 'w-', linewidth=1)
-        
-        ax.set_xlabel('$t$')
-        ax.set_ylabel('$x$')
-        ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
-        ax.set_title('$u(t,x)$', fontsize=18)
-        
-        ####### Row 1: u(t,x) slices ##################
-        gs1 = gridspec.GridSpec(1, 3)
-        gs1.update(top=1 - 1.0 / 3.0 - 0.1, bottom=1.0 - 2.0 / 3.0, left=0.1, right=0.9, wspace=0.5)
-        
-        ax = plt.subplot(gs1[0, 0])
-        ax.plot(self.x, self.Exact[25, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.u_pred_grid[25, :], 'r--', linewidth=2, label='Prediction')
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$u(t,x)$')
-        ax.set_title('$t = 0.25$', fontsize=18)
-        ax.axis('square')
-        ax.set_xlim([-1.1, 1.1])
-        ax.set_ylim([-1.1, 1.1])
-        
-        ax = plt.subplot(gs1[0, 1])
-        ax.plot(self.x, self.Exact[50, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.u_pred_grid[50, :], 'r--', linewidth=2, label='Prediction')
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$u(t,x)$')
-        ax.axis('square')
-        ax.set_xlim([-1.1, 1.1])
-        ax.set_ylim([-1.1, 1.1])
-        ax.set_title('$t = 0.50$', fontsize=18)
-        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.35), ncol=5, frameon=False)
-        
-        ax = plt.subplot(gs1[0, 2])
-        ax.plot(self.x, self.Exact[75, :], 'b-', linewidth=2, label='Exact')
-        ax.plot(self.x, self.u_pred_grid[75, :], 'r--', linewidth=2, label='Prediction')
-        ax.set_xlabel('$x$')
-        ax.set_ylabel('$u(t,x)$')
-        ax.axis('square')
-        ax.set_xlim([-1.1, 1.1])
-        ax.set_ylim([-1.1, 1.1])
-        ax.set_title('$t = 0.75$', fontsize=18)
-                        
-        plt.savefig(self.filename, dpi=300)
-        plt.close()
-
-        print()
-        print('Figure saved to ' + self.filename)
-        print()
-
-        return
-
     def record_data(self, epoch_num):
         self.rho_pred_val, self.u_pred_val, self.E_pred_val, self.f1_pred_val, self.f2_pred_val, self.f3_pred_val = self.predict(self.X_star)
         x = self.X_star[:, 0]
@@ -494,7 +415,7 @@ class PhysicsInformedNN:
         epoch = np.ones(len(x)) * epoch_num
         data = {'x': x, 't': t, 'rho_pred': self.rho_pred_val[:,0], 'u_pred': self.u_pred_val[:,0], 'E_pred': self.E_pred_val[:,0], 'epoch': epoch}
         self.df = pd.DataFrame(data)
-        
+
     def save_data(self):
         self.df.to_csv(self.filename[:-3] + 'csv', mode='a', index=False)
         
