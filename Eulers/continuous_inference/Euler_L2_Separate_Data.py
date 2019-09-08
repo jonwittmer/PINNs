@@ -94,8 +94,8 @@ class PhysicsInformedNN:
         
         # Randomly choose collocations points
         self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f,1] )
-        self.t_phys = self.lb[1] + self.exponential_time_sample(np.zeros((self.params.N_f, 1)), self.ub[1] - self.lb[1])
-        #self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
+        self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
+        #self.t_phys = self.lb[1] + self.exponential_time_sample(np.zeros((self.params.N_f, 1)), self.ub[1] - self.lb[1])
 
         self.df = pd.DataFrame()
 
@@ -337,7 +337,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/L2/Expo/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/L2/Uniform/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
              
     def run_NN(self):
         self.train(self.params.epochs)
