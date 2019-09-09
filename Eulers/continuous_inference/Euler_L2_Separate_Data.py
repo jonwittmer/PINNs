@@ -27,10 +27,10 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 20000
+    N_f    = 30000
     pen    = 10.0
     epochs = 1e6
-    gpu    = '2'
+    gpu    = '1'
 
 
 class PhysicsInformedNN:
