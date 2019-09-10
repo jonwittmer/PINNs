@@ -90,7 +90,7 @@ class PhysicsInformedNN:
         # tf placeholders and graph
         self.sess = tf.Session(config=self.config)                
         init = tf.global_variables_initializer()
-        self.sess.run(init)        
+        self.sess.run(init)                
         
         # randomly choose collocations points
         self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
@@ -169,6 +169,9 @@ class PhysicsInformedNN:
         start_time = time.time()
         it = 0
         loss_value = 1000
+        
+        a = self.sess.run(self.diag_entries, tf_dict)
+        pdb.set_trace()
         
         # store current weights to be updated later using IRLS
         self.weights_current = self.weights

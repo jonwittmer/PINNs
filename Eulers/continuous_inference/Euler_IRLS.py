@@ -14,6 +14,7 @@ from scipy.interpolate import griddata
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.gridspec as gridspec
 import time
+import pdb #Equivalent of keyboard in MATLAB, just add "pdb.set_trace()"
 
 import os
 import sys
@@ -27,8 +28,8 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_data = 400
-    N_f    = 10000
+    N_data = 150
+    N_f    = 40000
     pen    = 10.0
     epochs = 1e6
     gpu    = '1'
@@ -216,7 +217,7 @@ class PhysicsInformedNN:
         
         # training 
         start_time = time.time()
-        it = 1
+        it = 1    
         
         # store current weights to be updated later using IRLS
         self.weights_current = self.weights
@@ -236,7 +237,7 @@ class PhysicsInformedNN:
 
             # print to monitor results
             if it <= 1e7:
-                if it % 1000 == 0:
+                if it % 10 == 0:
                     elapsed = time.time() - start_time
                     loss_value = self.sess.run(self.loss_IRLS, tf_dict)
                     print('It: %d, Loss: %.3e, Time: %.2f' %
@@ -245,6 +246,7 @@ class PhysicsInformedNN:
                             
                 # save figure every so often so if it crashes, we have some results
                 if it % 10000 == 0:
+                    print('saving data')
                     self.record_data(it)
                     self.save_data()
             else:
@@ -309,8 +311,14 @@ class PhysicsInformedNN:
         initial_u = self.Exact_u[0:1,:].T
         initial_E = self.Exact_E[0:1,:].T
         
+        idx_x = np.random.choice(self.x.shape[0], n0, replace=False) #Extract Data Points
+        domain_initial = domain_initial[idx_x,:]
+        initial_rho = initial_rho[idx_x,0:1]
+        initial_u = initial_u[idx_x,0:1]
+        initial_E = initial_E[idx_x,0:1]
+        
         # Boundary Conditions
-        domain_left_boundary = np.hstack((self.X[:,0:1], self.T[:,0:1])) 
+        domain_left_boundary = np.hstack((self.X[:,0:1], self.T[:,0:1]))
         left_boundary_rho = self.Exact_rho[:,0:1] 
         left_boundary_u = self.Exact_u[:,0:1] 
         left_boundary_E = self.Exact_E[:,0:1] 
@@ -318,6 +326,16 @@ class PhysicsInformedNN:
         right_boundary_rho = self.Exact_rho[:,-1:] 
         right_boundary_u = self.Exact_u[:,-1:] 
         right_boundary_E = self.Exact_E[:,-1:] 
+        
+        idx_t = np.random.choice(self.t.shape[0], nb, replace=False) #Extract Data Points
+        domain_left_boundary = domain_left_boundary[idx_t,:]
+        left_boundary_rho = left_boundary_rho[idx_t,0:1]
+        left_boundary_u = left_boundary_u[idx_t,0:1]
+        left_boundary_E = left_boundary_E[idx_t,0:1]
+        domain_right_boundary = domain_right_boundary[idx_t,:]
+        right_boundary_rho = right_boundary_rho[idx_t,0:1]
+        right_boundary_u = right_boundary_u[idx_t,0:1]
+        right_boundary_E = right_boundary_E[idx_t,0:1]
         
         self.X_data_train = np.vstack([domain_initial, domain_left_boundary, domain_right_boundary]) 
         self.rho_train = np.vstack([initial_rho, left_boundary_rho, right_boundary_rho]) 
