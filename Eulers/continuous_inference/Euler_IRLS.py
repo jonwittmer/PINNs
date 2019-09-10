@@ -70,7 +70,7 @@ class PhysicsInformedNN:
                          
                         
         # Optimizer
-        self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=3e-4, epsilon=1e-8)
+        self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=1e-8, epsilon=1e-8)
         self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss_IRLS)
         
         # 2nd order optimizer used once we get "close" to the solution
