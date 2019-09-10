@@ -273,7 +273,7 @@ class PhysicsInformedNN:
 # =============================================================================
                             
                 # save figure every so often so if it crashes, we have some results
-                if it % 10000 == 0:
+                if it % 5000 == 0:
                     print('saving data')
                     self.record_data(it)
                     self.save_data()
