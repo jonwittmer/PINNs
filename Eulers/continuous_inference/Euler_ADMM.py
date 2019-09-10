@@ -27,8 +27,8 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_data = 400
-    N_f    = 10000
+    N_data = 300
+    N_f    = 30000
     pen    = 10.0
     epochs = 1e6
     gpu    = '3'
@@ -91,8 +91,8 @@ class PhysicsInformedNN:
         
         # Randomly choose collocations points
         self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.N_f,1] )
-        #self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
-        self.t_phys = self.lb[1] + self.exponential_time_sample(np.zeros((self.N_f, 1)), self.ub[1] - self.lb[1])
+        self.t_phys = np.random.uniform(self.lb[1], self.ub[1], [self.params.N_f,1])
+        #self.t_phys = self.lb[1] + self.exponential_time_sample(np.zeros((self.N_f, 1)), self.ub[1] - self.lb[1])
 
         # Assign the real initial value of z = r(w) 
         self.sess.run([self.z1.assign(self.f1_pred),
@@ -374,15 +374,15 @@ class PhysicsInformedNN:
         self.E_train = np.vstack([initial_E, left_boundary_E, right_boundary_E]) 
         
         # use all of the input data
-        '''
+        
         # Construct Training Data
         idx = np.random.choice(self.X_data_train.shape[0], self.params.N_data, replace=False) 
         self.X_data_train = self.X_data_train[idx, :]
         self.rho_train = self.rho_train[idx,:]
         self.u_train = self.u_train[idx,:]
         self.E_train = self.E_train[idx,:]
-        '''
-        self.params.N_data = len(self.X_data_train[:,0])
+        
+        #self.params.N_data = len(self.X_data_train[:,0])
 
         # reassign here to conform to old workflow - NEEDS UPDATING
         self.x_data = self.X_data_train[:, 0:1]
@@ -392,7 +392,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/ADMM/Expo/Nu{self.params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/ADMM/Uniform/Nu{self.params.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
              
     def run_NN(self):
         self.train(self.params.epochs)
@@ -496,7 +496,7 @@ class PhysicsInformedNN:
         self.df = pd.DataFrame(data)
         
     def save_data(self):
-        self.df.to_csv(self.filename[:-3] + 'csv', mode='a', index=False)
+        self.df.to_csv(self.filename[:-3] + 'csv', index=False)
         
     
 if __name__ == "__main__":

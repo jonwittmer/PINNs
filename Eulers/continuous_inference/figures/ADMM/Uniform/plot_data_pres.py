@@ -80,7 +80,8 @@ ax.plot(t[-2] * np.ones((2, 1)), line, 'w-', linewidth=1)
 ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
-ax.set_title('$L^2$ Regularization\n Uniform Collocation\n $\\rho (t,x)$', fontsize=18)
+# ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
+ax.set_title('$L^1$ Regularization with ADMM\n Uniform Collocation Points\n $\\rho (t,x)$', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)
@@ -141,7 +142,7 @@ ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
 # ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
-ax.set_title('$L^2$ Regularization\n $u(t,x)$', fontsize=18)
+ax.set_title('$L^1$ Regularization with ADMM\n Uniform Collocation Points\n $u(t,x)$', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)
@@ -149,8 +150,8 @@ gs1 = gridspec.GridSpec(1, 3)
 gs1.update(top=1 - 1.0 / 2.0 - 0.1, bottom=0.1, left=0.1, right=0.9, wspace=0.5)
 
 ax = plt.subplot(gs1[0, 0])
-ax.plot(x, Exact_u[0, :], 'b-', linewidth=2, label='Exact')
-ax.plot(x, U_pred[0, :], 'r--', linewidth=2, label='Prediction')
+ax.plot(x, Exact_u[1, :], 'b-', linewidth=2, label='Exact')
+ax.plot(x, U_pred[1, :], 'r--', linewidth=2, label='Prediction')
 ax.set_xlabel('$x$')
 ax.set_ylabel('$u(t,x)$')
 ax.set_title('$t = 0$', fontsize=18)
@@ -203,7 +204,7 @@ ax.set_xlabel('$t$')
 ax.set_ylabel('$x$')
 ax.legend(loc='upper center', bbox_to_anchor=(1.0, -0.125), ncol=5, frameon=False)
 # ax.set_title('L1 Regularization with ADMM\n $u(t,x)$ - ' + str(ind) + ' epochs', fontsize=18)
-ax.set_title('$L^2$ Regularization\n $E(t,x)$', fontsize=18)
+ax.set_title('$L^1$ Regularization with ADMM\n Uniform Collocation Points\n $E(t,x)$', fontsize=18)
 
 ####### Row 1: u(t,x) slices ##################
 gs1 = gridspec.GridSpec(1, 3)

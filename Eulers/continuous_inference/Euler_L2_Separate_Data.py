@@ -27,10 +27,10 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 30000
+    N_f    = 40000
     pen    = 10.0
-    epochs = 1e6
-    gpu    = '1'
+    epochs = 5e4
+    gpu    = '0'
 
 
 class PhysicsInformedNN:
@@ -240,6 +240,8 @@ class PhysicsInformedNN:
 
             it += 1
 
+        self.lbfgs.minimize(self.sess, tf_dict)
+
     def predict(self, X_star):
         
         tf_dict = {self.x_data_tf: X_star[:, 0:1], self.t_data_tf: X_star[:, 1:2],
@@ -337,7 +339,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/L2/Uniform/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/L2/LBFGS/Nu{self.N_data}_Nf{params.N_f}_e{int(params.epochs)}.png'
              
     def run_NN(self):
         self.train(self.params.epochs)
@@ -361,7 +363,7 @@ class PhysicsInformedNN:
         self.df = pd.DataFrame(data)
         
     def save_data(self):
-        self.df.to_csv(self.filename[:-3] + 'csv', mode='a', index=False)
+        self.df.to_csv(self.filename[:-3] + 'csv', index=False)
         
     
 if __name__ == "__main__":
