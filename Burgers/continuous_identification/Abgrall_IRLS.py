@@ -170,9 +170,6 @@ class PhysicsInformedNN:
         it = 0
         loss_value = 1000
         
-        a = self.sess.run(self.diag_entries, tf_dict)
-        pdb.set_trace()
-        
         # store current weights to be updated later using IRLS
         self.weights_current = self.weights
 
