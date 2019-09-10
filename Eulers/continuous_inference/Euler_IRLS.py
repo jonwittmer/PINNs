@@ -283,6 +283,9 @@ class PhysicsInformedNN:
 
     def load_data(self):
         params = self.params
+        
+        n0 = 50 # Number of data points for initial condition
+        nb = 50 # Number of data points for boundary condition
 
         self.layers = [2, 200, 200, 200, 200, 200, 3]
         
