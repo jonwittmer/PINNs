@@ -209,6 +209,7 @@ class PhysicsInformedNN:
         return 1
     
     def train(self, nEpochs):
+        print('Beginning Training')
         self.current_tol = 1e-7
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.rho_tf: self.rho, self.u_tf: self.u, self.E_tf: self.E,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys, self.tol: self.current_tol}
