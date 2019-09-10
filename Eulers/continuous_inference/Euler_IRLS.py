@@ -29,7 +29,7 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 10000
+    N_f    = 20000
     pen    = 10.0
     epochs = 1e6
     gpu    = '1'
@@ -58,9 +58,10 @@ class PhysicsInformedNN:
         self.f1_pred, self.f2_pred, self.f3_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
         
         # Construct Loss Function
-        self.diag_entries_f1 = 1./(tf.math.sqrt(tf.math.abs(self.f1_pred)))
-        self.diag_entries_f2 = 1./(tf.math.sqrt(tf.math.abs(self.f2_pred)))
-        self.diag_entries_f3 = 1./(tf.math.sqrt(tf.math.abs(self.f3_pred)))
+        epsilon = 1e-15
+        self.diag_entries_f1 = 1./(tf.math.sqrt(tf.math.abs(self.f1_pred + epsilon)))
+        self.diag_entries_f2 = 1./(tf.math.sqrt(tf.math.abs(self.f2_pred + epsilon)))
+        self.diag_entries_f3 = 1./(tf.math.sqrt(tf.math.abs(self.f3_pred + epsilon)))
         self.loss_IRLS = 1 / self.N_data * tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2) + \
                          1 / self.N_data * tf.pow(tf.norm(self.u_tf - self.u_pred,     2), 2) + \
                          1 / self.N_data * tf.pow(tf.norm(self.E_tf - self.E_pred,     2), 2) + \
@@ -70,7 +71,7 @@ class PhysicsInformedNN:
                          
                         
         # Optimizer
-        self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=1e-8, epsilon=1e-8)
+        self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001, epsilon=1e-8)
         self.train_op_Adam   = self.optimizer_Adam.minimize(self.loss_IRLS)
         
         # 2nd order optimizer used once we get "close" to the solution
