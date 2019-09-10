@@ -31,7 +31,7 @@ class Parameters:
     N_f    = 30000
     pen    = 10.0
     epochs = 1
-    gpu    = '2'
+    gpu    = '3'
 
 
 class PhysicsInformedNN:

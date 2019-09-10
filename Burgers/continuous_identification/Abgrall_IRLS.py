@@ -31,8 +31,8 @@ class Parameters:
     N_u    = 100
     N_f    = 1000
     rho    = 10.0
-    epochs = 1e5
-    gpu    = '3'
+    epochs = 200
+    gpu    = '2'
 
 
 class PhysicsInformedNN:
@@ -182,7 +182,7 @@ class PhysicsInformedNN:
                 loss_value = self.sess.run(self.loss_IRLS, tf_dict)
                 print('It: %d, Loss: %.3e, Time: %.2f' %
                       (it, loss_value, elapsed))
-                    start_time = time.time()
+                start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
             if it % 100 == 0:
