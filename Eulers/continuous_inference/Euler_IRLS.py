@@ -77,7 +77,7 @@ class PhysicsInformedNN:
         self.tol = tf.placeholder(tf.float64, shape=[])
         self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss_IRLS,
                                                            method='L-BFGS-B',
-                                                           options={'maxiter': 10000,
+                                                           options={'maxiter': 50000,
                                                                     'maxfun': 50000,
                                                                     'maxcor': 50,
                                                                     'maxls': 50,
@@ -266,6 +266,8 @@ class PhysicsInformedNN:
             self.sess.run(self.update_weights, feed_dict=tf_dict)
 
             it += 1
+        
+        self.lbfgs.minimize(self.sess, tf_dict)
 
     def predict(self, X_star):
         
