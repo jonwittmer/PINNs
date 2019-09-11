@@ -29,7 +29,7 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 10000
+    N_f    = 100
     pen    = 10.0
     epochs = 10000
     gpu    = '0'
@@ -242,6 +242,7 @@ class PhysicsInformedNN:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss_IRLS, tf_dict)
                 print(self.filename[:-3])
+                print('GPU: ' + self.params.gpu)
                 print('It: %d, Loss: %.3e, Time: %.2f\n' %
                       (it, loss_value, elapsed))
                 start_time = time.time()
