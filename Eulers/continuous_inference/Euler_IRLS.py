@@ -29,7 +29,7 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 100
+    N_f    = 10000
     pen    = 10.0
     epochs = 10000
     gpu    = '0'
