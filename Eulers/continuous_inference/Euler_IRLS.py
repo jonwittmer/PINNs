@@ -215,6 +215,8 @@ class PhysicsInformedNN:
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.rho_tf: self.rho, self.u_tf: self.u, self.E_tf: self.E,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys, self.tol: self.current_tol}
         
+        print('Beginning Training')
+        
         # training 
         start_time = time.time()
         it = 1    
@@ -228,7 +230,6 @@ class PhysicsInformedNN:
                        self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys, self.tol: self.current_tol}
             
             self.sess.run(self.train_op_Adam, tf_dict)
-            print('Beginning Training')
             
             # new batch of collocation points
             #self.x_phys = np.random.uniform(self.lb[0], self.ub[0], [self.params.N_f, 1])
@@ -237,60 +238,47 @@ class PhysicsInformedNN:
             #           self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
 
             # print to monitor results
-            if it <= 1e7:
-                if it % 100 == 0:
-                    elapsed = time.time() - start_time
-                    loss_value = self.sess.run(self.loss_IRLS, tf_dict)
-                    print(self.filename[:-3])
-                    print('It: %d, Loss: %.3e, Time: %.2f\n' %
-                          (it, loss_value, elapsed))
-                    start_time = time.time()
-                    
+            if it % 100 == 0:
+                elapsed = time.time() - start_time
+                loss_value = self.sess.run(self.loss_IRLS, tf_dict)
+                print(self.filename[:-3])
+                print('It: %d, Loss: %.3e, Time: %.2f\n' %
+                      (it, loss_value, elapsed))
+                start_time = time.time()
+                
 # =============================================================================
-#                     # Debugging
-#                     f_1 = self.sess.run(self.f1_pred, tf_dict)
-#                     f_2 = self.sess.run(self.f2_pred, tf_dict)
-#                     f_3 = self.sess.run(self.f3_pred, tf_dict)
-#                         
-#                     d_1 = self.sess.run(self.diag_entries_f1, tf_dict)
-#                     d_2 = self.sess.run(self.diag_entries_f2, tf_dict)
-#                     d_3 = self.sess.run(self.diag_entries_f3, tf_dict)
-#                         
-#                     print('f_1: %.3e, f_2: %.3e, f_3: %.3e\n' %(np.min(np.abs(f_1)), np.min(np.abs(f_2)), np.min(np.abs(f_3))))   
-#                                         
-#                     if np.isnan(loss_value):
-#                         tf_dict_star = {self.x_data_tf: self.X_star[:, 0:1], self.t_data_tf: self.X_star[:, 1:2],
-#                         self.x_phys_tf: self.X_star[:, 0:1], self.t_phys_tf: self.X_star[:, 1:2]}
-#                         f1_pred_val = self.sess.run(self.f1_pred, tf_dict_star)
-#                         f2_pred_val = self.sess.run(self.f2_pred, tf_dict_star)
-#                         f3_pred_val = self.sess.run(self.f3_pred, tf_dict_star)
-#                         print('Truef_1: %.3e, Truef_2: %.3e, Truef_3: %.3e \n' %(np.min(np.abs(f1_pred_val)), np.min(np.abs(f2_pred_val)), np.min(np.abs(f3_pred_val)))) 
-#                         
-#                         u_pred_val = self.sess.run(self.u_pred, tf_dict_star)
-#                         rho_pred_val = self.sess.run(self.rho_pred, tf_dict_star)
-#                         E_pred_val = self.sess.run(self.E_pred, tf_dict_star)
-#                         print('Trueu: %.3e, Truerho: %.3e, TrueE: %.3e \n' %(np.min(np.abs(u_pred_val)), np.min(np.abs(rho_pred_val)), np.min(np.abs(E_pred_val)))) 
-#                         
-#                         pdb.set_trace()
+#                 # Debugging
+#                 f_1 = self.sess.run(self.f1_pred, tf_dict)
+#                 f_2 = self.sess.run(self.f2_pred, tf_dict)
+#                 f_3 = self.sess.run(self.f3_pred, tf_dict)
+#                     
+#                 d_1 = self.sess.run(self.diag_entries_f1, tf_dict)
+#                 d_2 = self.sess.run(self.diag_entries_f2, tf_dict)
+#                 d_3 = self.sess.run(self.diag_entries_f3, tf_dict)
+#                     
+#                 print('f_1: %.3e, f_2: %.3e, f_3: %.3e\n' %(np.min(np.abs(f_1)), np.min(np.abs(f_2)), np.min(np.abs(f_3))))   
+#                                     
+#                 if np.isnan(loss_value):
+#                     tf_dict_star = {self.x_data_tf: self.X_star[:, 0:1], self.t_data_tf: self.X_star[:, 1:2],
+#                     self.x_phys_tf: self.X_star[:, 0:1], self.t_phys_tf: self.X_star[:, 1:2]}
+#                     f1_pred_val = self.sess.run(self.f1_pred, tf_dict_star)
+#                     f2_pred_val = self.sess.run(self.f2_pred, tf_dict_star)
+#                     f3_pred_val = self.sess.run(self.f3_pred, tf_dict_star)
+#                     print('Truef_1: %.3e, Truef_2: %.3e, Truef_3: %.3e \n' %(np.min(np.abs(f1_pred_val)), np.min(np.abs(f2_pred_val)), np.min(np.abs(f3_pred_val)))) 
+#                     
+#                     u_pred_val = self.sess.run(self.u_pred, tf_dict_star)
+#                     rho_pred_val = self.sess.run(self.rho_pred, tf_dict_star)
+#                     E_pred_val = self.sess.run(self.E_pred, tf_dict_star)
+#                     print('Trueu: %.3e, Truerho: %.3e, TrueE: %.3e \n' %(np.min(np.abs(u_pred_val)), np.min(np.abs(rho_pred_val)), np.min(np.abs(E_pred_val)))) 
+#                     
+#                     pdb.set_trace()
 # =============================================================================
-                            
-                # save figure every so often so if it crashes, we have some results
-                if it % 5000 == 0:
-                    print('saving data')
-                    self.record_data(it)
-                    self.save_data()
-            else:
-                if it % 1 == 0:
-                    elapsed = time.time() - start_time
-                    loss_value = self.sess.run(self.loss, tf_dict)
-                    print('It: %d, Loss: %.3e, Time: %.2f' %
-                          (it, loss_value, elapsed))
-                    start_time = time.time()
-                            
-                # save figure every so often so if it crashes, we have some results
-                if it % 100 == 0:
-                    self.record_data(it)
-                    self.save_data()
+                        
+            # save figure every so often so if it crashes, we have some results
+            if it % 1000 == 0:
+                print('saving data')
+                self.record_data(it)
+                self.save_data()
             
             # for iteratively reweighted least squares, the new weights are equal to the old weights plus the minimizer of the IRLS loss function    
             self.sess.run(self.update_weights, feed_dict=tf_dict)
