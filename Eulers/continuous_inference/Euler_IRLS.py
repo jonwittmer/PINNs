@@ -307,7 +307,7 @@ class PhysicsInformedNN:
         n0 = 50 # Number of data points for initial condition
         nb = 50 # Number of data points for boundary condition
 
-        self.layers = [2, 200, 200, 200, 200, 200, 3]
+        self.layers = [2, 400, 400, 400, 400, 400, 3]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_eulers.mat')
         
