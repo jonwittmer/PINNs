@@ -318,7 +318,7 @@ class PhysicsInformedNN:
         n0 = 50 # Number of data points for initial condition
         nb = 50 # Number of data points for boundary condition
 
-        self.layers = [2, 200, 200, 200, 200, 200, 3]
+        self.layers = [2, 500, 500, 500, 500, 500, 3]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_eulers.mat')
         
@@ -395,7 +395,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/IRLS/Expo/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}.png'
+        self.filename = f'figures/IRLS/Expo/Nu{self.N_data}_Nf{params.N_f}_pen{int(params.pen)}_e{int(params.epochs)}_l{self.layers[1]}.png'
              
     def run_NN(self):
         self.train(self.params.epochs)
