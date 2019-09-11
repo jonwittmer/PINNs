@@ -31,7 +31,7 @@ class Parameters:
     N_data = 150
     N_f    = 10000
     pen    = 10.0
-    epochs = 10000
+    epochs = 50000
     gpu    = '0'
 
 
