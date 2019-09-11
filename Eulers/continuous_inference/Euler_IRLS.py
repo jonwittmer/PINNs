@@ -29,10 +29,10 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 20000
+    N_f    = 10000
     pen    = 10.0
     epochs = 10000
-    gpu    = '0'
+    gpu    = '2'
 
 
 class PhysicsInformedNN:
@@ -307,7 +307,7 @@ class PhysicsInformedNN:
         n0 = 50 # Number of data points for initial condition
         nb = 50 # Number of data points for boundary condition
 
-        self.layers = [2, 200, 200, 200, 200, 200, 3]
+        self.layers = [2, 400, 400, 400, 400, 400, 3]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_eulers.mat')
         
