@@ -29,10 +29,10 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 10000
+    N_f    = 20000
     pen    = 10.0
     epochs = 50000
-    gpu    = '0'
+    gpu    = '1'
 
 
 class PhysicsInformedNN:
@@ -65,9 +65,9 @@ class PhysicsInformedNN:
         self.loss_IRLS = 1 / self.N_data * tf.pow(tf.norm(self.rho_tf - self.rho_pred, 2), 2) + \
                          1 / self.N_data * tf.pow(tf.norm(self.u_tf - self.u_pred,     2), 2) + \
                          1 / self.N_data * tf.pow(tf.norm(self.E_tf - self.E_pred,     2), 2) + \
-                         1 / self.N_f * tf.pow(tf.norm(tf.diag(self.diag_entries_f1)*self.f1_pred, 2), 2) + \
-                         1 / self.N_f * tf.pow(tf.norm(tf.diag(self.diag_entries_f2)*self.f2_pred, 2), 2) + \
-                         1 / self.N_f * tf.pow(tf.norm(tf.diag(self.diag_entries_f3)*self.f3_pred, 2), 2)
+                         1 / self.N_f * tf.pow(tf.norm(tf.multiply(self.diag_entries_f1,self.f1_pred), 2), 2) + \
+                         1 / self.N_f * tf.pow(tf.norm(tf.multiply(self.diag_entries_f2,self.f2_pred), 2), 2) + \
+                         1 / self.N_f * tf.pow(tf.norm(tf.multiply(self.diag_entries_f3,self.f3_pred), 2), 2)
                          
                         
         # Optimizer
@@ -307,7 +307,7 @@ class PhysicsInformedNN:
         n0 = 50 # Number of data points for initial condition
         nb = 50 # Number of data points for boundary condition
 
-        self.layers = [2, 400, 400, 400, 400, 400, 3]
+        self.layers = [2, 200, 200, 200, 200, 200, 3]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_eulers.mat')
         
