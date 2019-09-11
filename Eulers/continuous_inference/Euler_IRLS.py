@@ -29,7 +29,7 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_data = 150
-    N_f    = 5000
+    N_f    = 10000
     pen    = 10.0
     epochs = 50000
     gpu    = '2'
@@ -68,7 +68,6 @@ class PhysicsInformedNN:
                          1 / self.N_f * tf.pow(tf.norm(tf.multiply(self.diag_entries_f1,self.f1_pred), 2), 2) + \
                          1 / self.N_f * tf.pow(tf.norm(tf.multiply(self.diag_entries_f2,self.f2_pred), 2), 2) + \
                          1 / self.N_f * tf.pow(tf.norm(tf.multiply(self.diag_entries_f3,self.f3_pred), 2), 2)
-                         
                         
         # Optimizer
         self.optimizer_Adam  = tf.train.AdamOptimizer(learning_rate=0.001, epsilon=1e-8)
@@ -257,7 +256,7 @@ class PhysicsInformedNN:
 #                 d_2 = self.sess.run(self.diag_entries_f2, tf_dict)
 #                 d_3 = self.sess.run(self.diag_entries_f3, tf_dict)
 #                     
-#                 print('f_1: %.3e, f_2: %.3e, f_3: %.3e\n' %(np.min(np.abs(f_1)), np.min(np.abs(f_2)), np.min(np.abs(f_3))))   
+#                 print('f_1: %.3e, f_2: %.3e, f_3: %.3e\n' %(np.min(np.abs(f_1)), np.min(np.abs(f_2)), np.min(np.abs(f_3))))                   
 #                                     
 #                 if np.isnan(loss_value):
 #                     tf_dict_star = {self.x_data_tf: self.X_star[:, 0:1], self.t_data_tf: self.X_star[:, 1:2],
