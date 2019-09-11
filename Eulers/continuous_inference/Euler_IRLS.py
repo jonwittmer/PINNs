@@ -31,8 +31,8 @@ class Parameters:
     N_data = 150
     N_f    = 20000
     pen    = 10.0
-    epochs = 50000
-    gpu    = '1'
+    epochs = 10000
+    gpu    = '0'
 
 
 class PhysicsInformedNN:
