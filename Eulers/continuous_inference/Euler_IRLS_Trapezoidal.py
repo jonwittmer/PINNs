@@ -316,7 +316,7 @@ class PhysicsInformedNN:
         n0 = 50 # Number of data points for initial condition
         nb = 50 # Number of data points for boundary condition
 
-        self.layers = [2, 500, 500, 500, 500, 500, 3]
+        self.layers = [2, 200, 200, 200, 200, 200, 3]
         
         self.data = scipy.io.loadmat('../Data/Abgrall_eulers.mat')
         
@@ -393,7 +393,7 @@ class PhysicsInformedNN:
         self.E = self.E_train
 
         # to make the filename string easier to read
-        self.filename = f'figures/IRLS/Expo/IRLS_Nu{self.N_data}_Nf{params.N_f}_e{int(params.epochs)}_l{self.layers[1]}.png'
+        self.filename = f'figures/IRLS/Expo/Trape_IRLS_Nu{self.N_data}_Nx{params.N_x}_Nt{params.N_t}_e{int(params.epochs)}_l{self.layers[1]}.png'
     
     def construct_trapezoidal_rule_scalar_multipliers(self):
         # construct scalar multipliers for trapezoidal rule
