@@ -61,6 +61,7 @@ class PhysicsInformedNN:
         self.f_pred_trapezoidal = tf.multiply(self.trapezoidal_scalars_t,self.f_pred_trapezoidal)
         
         # construct loss function
+        self.construct_trapezoidal_rule_scalar_multipliers()
         self.diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred_trapezoidal)))
         self.loss_IRLS = 1/self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
                          self.alpha * tf.pow(tf.norm(tf.multiply(self.diag_entries,self.f_pred_trapezoidal), 2), 2)
@@ -250,7 +251,8 @@ class PhysicsInformedNN:
         self.x_data = self.X_u_train[:, 0:1]
         self.t_data = self.X_u_train[:, 1:2]
         self.u = self.u_train
-        
+                
+    def construct_trapezoidal_rule_scalar_multipliers(self):
         # construct scalar multipliers for trapezoidal rule
         spatial_step_size = (self.ub[0]-self.lb[0])/self.N_x
         x_int_points = np.arange(self.lb[0],self.ub[0],spatial_step_size)
@@ -263,7 +265,7 @@ class PhysicsInformedNN:
         self.trapezoidal_scalars_x = tf.where(np.logical_or(x_t_int[:,0] == self.lb[0], x_t_int[:,0] == self.ub[0]), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))
         self.trapezoidal_scalars_t = tf.where(np.logical_or(x_t_int[:,1] == self.lb[1], x_t_int[:,1] == self.ub[1]), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))  
         self.alpha = (spatial_step_size*time_step_size)/4     
-        
+         
     def run_NN(self):
         self.train(self.params.epochs)
         
