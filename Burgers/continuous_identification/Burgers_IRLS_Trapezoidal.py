@@ -66,9 +66,11 @@ class PhysicsInformedNN:
         x_t_int = np.hstack((X.flatten()[:,None], T.flatten()[:,None])) # Forms (N_xN_t x 2) array which associates each set of N_x spatial points (column 1) to one time point (column 2)
         self.x_phys = x_t_int[:, 0:1]
         self.t_phys = x_t_int[:, 1:2]
+        trapezoidal_scalars_x = np.where(np.logical_or(x_t_int[:,0] == self.lb[0], x_t_int[:,0] == self.ub[0]), np.ones(x_t_int.shape[0]), 2*np.ones(x_t_int.shape[0]))
+        trapezoidal_scalars_t = np.where(np.logical_or(x_t_int[:,1] == self.lb[1], x_t_int[:,1] == self.ub[1]), np.ones(x_t_int.shape[0]), 2*np.ones(x_t_int.shape[0]))
+        self.f_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x,self.f_pred)
+        self.f_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t,self.f_pred_trapezoidal)
         
-        
-    
         # construct loss function
         self.diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred_trapezoidal)))
         self.loss_IRLS = 1/self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
