@@ -57,19 +57,8 @@ class PhysicsInformedNN:
         self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
         
         # construct L1-regularization term with trapezoidal rule
-        spatial_step_size = (self.ub[0]-self.lb[0])/self.N_x
-        x_int_points = np.arange(self.lb[0],self.ub[0],spatial_step_size)
-        time_step_size = (self.ub[1]-self.lb[1])/self.N_t
-        t_int_points = np.arange(self.lb[1],self.ub[1],time_step_size)
-        X, T = np.meshgrid(x_int_points,t_int_points) # X is a (N_t x N_x) array with x_int_points repeated row wise N_t times. T is a (N_t x N_x) array with t_int_points repeated column wise N_x times
-        x_t_int = np.hstack((X.flatten()[:,None], T.flatten()[:,None])) # Forms (N_xN_t x 2) array which associates each set of N_x spatial points (column 1) to one time point (column 2)
-        self.x_phys = x_t_int[:, 0:1]
-        self.t_phys = x_t_int[:, 1:2]
-        trapezoidal_scalars_x = tf.where(np.logical_or(x_t_int[:,0] == self.lb[0], x_t_int[:,0] == self.ub[0]), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))
-        trapezoidal_scalars_t = tf.where(np.logical_or(x_t_int[:,1] == self.lb[1], x_t_int[:,1] == self.ub[1]), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))  
-        self.f_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x,self.f_pred)
-        self.f_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t,self.f_pred_trapezoidal)
-        self.alpha = (spatial_step_size*time_step_size)/4
+        self.f_pred_trapezoidal = tf.multiply(self.trapezoidal_scalars_x,self.f_pred)
+        self.f_pred_trapezoidal = tf.multiply(self.trapezoidal_scalars_t,self.f_pred_trapezoidal)
         
         # construct loss function
         self.diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred_trapezoidal)))
@@ -261,7 +250,20 @@ class PhysicsInformedNN:
         self.x_data = self.X_u_train[:, 0:1]
         self.t_data = self.X_u_train[:, 1:2]
         self.u = self.u_train
-             
+        
+        # construct scalar multipliers for trapezoidal rule
+        spatial_step_size = (self.ub[0]-self.lb[0])/self.N_x
+        x_int_points = np.arange(self.lb[0],self.ub[0],spatial_step_size)
+        time_step_size = (self.ub[1]-self.lb[1])/self.N_t
+        t_int_points = np.arange(self.lb[1],self.ub[1],time_step_size)
+        X, T = np.meshgrid(x_int_points,t_int_points) # X is a (N_t x N_x) array with x_int_points repeated row wise N_t times. T is a (N_t x N_x) array with t_int_points repeated column wise N_x times
+        x_t_int = np.hstack((X.flatten()[:,None], T.flatten()[:,None])) # Forms (N_xN_t x 2) array which associates each set of N_x spatial points (column 1) to one time point (column 2)
+        self.x_phys = x_t_int[:, 0:1]
+        self.t_phys = x_t_int[:, 1:2]
+        self.trapezoidal_scalars_x = tf.where(np.logical_or(x_t_int[:,0] == self.lb[0], x_t_int[:,0] == self.ub[0]), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))
+        self.trapezoidal_scalars_t = tf.where(np.logical_or(x_t_int[:,1] == self.lb[1], x_t_int[:,1] == self.ub[1]), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))  
+        self.alpha = (spatial_step_size*time_step_size)/4     
+        
     def run_NN(self):
         self.train(self.params.epochs)
         
