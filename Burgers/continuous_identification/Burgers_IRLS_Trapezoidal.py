@@ -194,6 +194,8 @@ class PhysicsInformedNN:
             if it % 10 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss_IRLS, tf_dict)
+                print(self.filename[:-3])
+                print('GPU: ' + self.params.gpu)
                 print('It: %d, Loss: %.3e, Time: %.2f' %
                       (it, loss_value, elapsed))
                 start_time = time.time()
@@ -219,7 +221,7 @@ class PhysicsInformedNN:
     def load_data(self):
         # to make the filename string easier to read
         p = self.params
-        self.filename = f'figures/IRLS/Raissi_PDE/Nu{p.N_u}_Nx{p.N_x}_e{int(p.epochs)}.png'
+        self.filename = f'figures/IRLS/Raissi_PDE/Trape_IRLS_Nu{p.N_u}_Nx{p.N_x}_Nt{p.N_t}_e{int(p.epochs)}.png'
 
         self.layers = [2, 20, 20, 20, 20, 20, 20, 20, 20, 1]
         
