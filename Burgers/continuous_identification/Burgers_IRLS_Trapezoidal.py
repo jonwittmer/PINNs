@@ -29,9 +29,9 @@ tf.set_random_seed(1234)
 
 class Parameters:
     N_u    = 100
-    N_x    = 20
-    N_t    = 20
-    epochs = 10
+    N_x    = 2000
+    N_t    = 2000
+    epochs = 1e5
     gpu    = '3'
 
 
