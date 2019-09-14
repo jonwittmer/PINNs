@@ -28,7 +28,7 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_u    = 100
+    N_data    = 150
     N_x    = 100
     N_t    = 100
     epochs = 50000
@@ -44,7 +44,8 @@ class PhysicsInformedNN:
         
         # Save dimensions
         self.N_data = self.params.N_data
-        self.N_f = self.params.N_f
+        self.N_x = self.params.N_x
+        self.N_t = self.params.N_t
        
         # Initialize training variables
         self.weights, self.biases = self.initialize_NN(self.layers)
