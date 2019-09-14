@@ -62,7 +62,8 @@ class PhysicsInformedNN:
         self.f_pred_trapezoidal = tf.multiply(self.trapezoidal_scalars_t,self.f_pred_trapezoidal)
         
         # construct loss function
-        self.diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred_trapezoidal)))
+        epsilon = 1e-15
+        self.diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred_trapezoidal + epsilon)))
         self.loss_IRLS = 1/self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
                          self.alpha * tf.pow(tf.norm(tf.multiply(self.diag_entries,self.f_pred_trapezoidal), 2), 2)
         
