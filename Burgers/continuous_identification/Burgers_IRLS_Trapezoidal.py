@@ -31,8 +31,8 @@ class Parameters:
     N_u    = 100
     N_x    = 100
     N_t    = 100
-    epochs = 1e5
-    gpu    = '3'
+    epochs = 1e6
+    gpu    = '0'
 
 
 class PhysicsInformedNN:
@@ -57,11 +57,11 @@ class PhysicsInformedNN:
         self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
         
         # construct L1-regularization term with trapezoidal rule
+        self.construct_trapezoidal_rule_scalar_multipliers()
         self.f_pred_trapezoidal = tf.multiply(self.trapezoidal_scalars_x,self.f_pred)
         self.f_pred_trapezoidal = tf.multiply(self.trapezoidal_scalars_t,self.f_pred_trapezoidal)
         
         # construct loss function
-        self.construct_trapezoidal_rule_scalar_multipliers()
         self.diag_entries = 1./(tf.math.sqrt(tf.math.abs(self.f_pred_trapezoidal)))
         self.loss_IRLS = 1/self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
                          self.alpha * tf.pow(tf.norm(tf.multiply(self.diag_entries,self.f_pred_trapezoidal), 2), 2)
