@@ -438,10 +438,12 @@ class PhysicsInformedNN:
 if __name__ == "__main__":
 
     params = Parameters()
-    if len(sys.argv) > 1:
-        params.N_data = int(sys.argv[1])
-        params.N_f = int(sys.argv[2])
-        params.epochs = int(sys.argv[3])
-        params.gpu = str(sys.argv[4])
+# =============================================================================
+#     if len(sys.argv) > 1:
+#         params.N_data = int(sys.argv[1])
+#         params.N_f = int(sys.argv[2])
+#         params.epochs = int(sys.argv[3])
+#         params.gpu = str(sys.argv[4])
+# =============================================================================
     A = PhysicsInformedNN(params)
     
