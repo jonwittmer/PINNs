@@ -31,7 +31,7 @@ class Parameters:
     N_u    = 100
     N_x    = 100
     N_t    = 100
-    epochs = 1e6
+    epochs = 50000
     gpu    = '0'
 
 
@@ -70,10 +70,10 @@ class PhysicsInformedNN:
         self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam = self.optimizer_Adam.minimize(self.loss_IRLS)
 
-        # set l-bfgs optimizer
+        # 2nd order optimizer used once we get "close" to the solution
         self.lbfgs = tf.contrib.opt.ScipyOptimizerInterface(self.loss_IRLS,
                                                              method='L-BFGS-B',
-                                                             options={'maxiter':1000,
+                                                             options={'maxiter':10000,
                                                                       'maxfun':50000,
                                                                       'maxcor':50,
                                                                       'maxls':50,
@@ -167,21 +167,21 @@ class PhysicsInformedNN:
         tf_dict = {self.x_data_tf: self.x_data, self.t_data_tf: self.t_data, self.u_tf: self.u,
                    self.x_phys_tf: self.x_phys, self.t_phys_tf: self.t_phys}
         
+        print('Beginning Training')
+        
         # main iterations: updating Lagrange multiplier
-        start_time = time.time()
-        it = 0
-        loss_value = 1000
+        start_time = time.time()        
+        it = 1
         
         # store current weights to be updated later using IRLS
-        self.weights_current = self.weights
-
+        self.weights_current = self.weights       
+        
         while it < nIter:
             # perform optimization
-            #self.sess.run(self.train_op_Adam, tf_dict)                    
-            self.lbfgs.minimize(self.sess, feed_dict=tf_dict)
+            self.sess.run(self.train_op_Adam, tf_dict)                    
 
             # print to monitor results
-            if it % 10 == 0:
+            if it % 100 == 0:
                 elapsed = time.time() - start_time
                 loss_value = self.sess.run(self.loss_IRLS, tf_dict)
                 print(self.filename[:-3])
@@ -191,7 +191,7 @@ class PhysicsInformedNN:
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
-            if it % 10 == 0:
+            if it % 1000 == 0:
                 #self.plot_results()
                 self.record_data(it)
                 self.save_data()
@@ -200,6 +200,8 @@ class PhysicsInformedNN:
             self.sess.run(self.update_weights, feed_dict=tf_dict)
                         
             it += 1
+        
+        self.lbfgs.minimize(self.sess, tf_dict)
 
     def predict(self, X_star):        
         tf_dict = {self.x_data_tf: X_star[:, 0:1], self.t_data_tf: X_star[:, 1:2],
