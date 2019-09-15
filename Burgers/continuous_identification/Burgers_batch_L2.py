@@ -55,7 +55,7 @@ class PhysicsInformedNN:
         self.f_pred = self.net_f(self.x_phys_tf, self.t_phys_tf)
 
         self.loss = 1 / self.N_u * tf.pow(tf.norm(self.u - self.u_pred, 2), 2) + \
-                    1 / self.N_f * tf.pow(tf.norm(self.f_pred, 1), 2)
+                    1 / self.N_f * tf.pow(tf.norm(self.f_pred, 2), 2)
 
         self.optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
         self.train_op_Adam = self.optimizer_Adam.minimize(self.loss)
