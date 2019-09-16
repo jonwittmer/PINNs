@@ -44,8 +44,8 @@ class RunOptions:
     gpu               = '3'
 
     # Choose PDE
-    Burgers_Raissi = 1
-    Burgers_Abgrall = 0
+    Burgers_Raissi = 0
+    Burgers_Abgrall = 1
     
     # Choose Regularization
     PINNs_Regularization_l1 = 1
@@ -83,12 +83,11 @@ class RunOptions:
 ###############################################################################
 #                                  Functions                                  #
 ###############################################################################
-def NN_predict(NN, X_star):
+def NN_u_star_predict(NN, X_star): # Note that X_star represents the full domain, not just the data points
     tf_dict = {NN.x_data_tf: X_star[:, 0:1], NN.t_data_tf: X_star[:, 1:2],
                NN.x_phys_tf: X_star[:, 0:1], NN.t_phys_tf: X_star[:, 1:2]} 
-    u_pred = sess.run(NN.u_pred, tf_dict)  
-    r_pred = sess.run(NN.r_pred, tf_dict) 
-    return u_pred, r_pred
+    u_star_pred = sess.run(NN.u_pred, tf_dict)  
+    return u_star_pred
 
 def save_prediction(savefilepath, epoch_num, u_pred):
     x = X_star[:, 0]
@@ -122,13 +121,11 @@ if __name__ == "__main__":
         trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
         diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.r_pred + epsilon)))
         loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-                    1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
+               1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
                     
     if run_options.PINNs_Regularization_Trapezoidal == 1:
-        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x,NN.r_pred)
-        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t,r_pred_trapezoidal)
-        
-        # construct loss function
+        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x, NN.r_pred)
+        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t, r_pred_trapezoidal)
         diag_entries = 1./(tf.math.sqrt(tf.math.abs(r_pred_trapezoidal + epsilon)))
         loss_IRLS = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
                          alpha * tf.pow(tf.norm(tf.multiply(diag_entries,r_pred_trapezoidal), 2), 2)
@@ -187,8 +184,8 @@ if __name__ == "__main__":
                             
             # save figure every so often so if it crashes, we have some results
             if epoch % 10 == 0:
-                u_pred, _ = NN_predict(NN, X_star)
-                save_prediction(run_options.outputs_savefilepath, epoch, u_pred)
+                u_current_pred = NN_u_star_predict(NN, X_star)
+                save_prediction(run_options.outputs_savefilepath, epoch, u_current_pred)         
                 
             # for iteratively reweighted least squares, the new weights are equal to the old weights plus the minimizer of the IRLS loss function    
             for l in range(0, len(NN.weights)): 
@@ -205,20 +202,15 @@ if __name__ == "__main__":
         print('Optimizing with LBFGS\n')        
         #lbfgs.minimize(sess, feed_dict=tf_dict)    
         
-        # Save final prediction
-        u_pred, _ = NN_predict(NN, X_star)
-        save_prediction(run_options.outputs_savefilepath, run_options.num_epochs, u_pred)
-        
         ###############################
         #   Predictions and Plotting  #
-        ################################    
-        # Predictions       
-        tf_dict = {NN.x_data_tf: X_star[:, 0:1], NN.t_data_tf: X_star[:, 1:2],
-                   NN.x_phys_tf: X_star[:, 0:1], NN.t_phys_tf: X_star[:, 1:2]}        
-        u_pred = sess.run(NN.u_pred, tf_dict)              
+        ################################          
+        # Save final prediction
+        u_final_pred = NN_u_star_predict(NN, X_star)
+        save_prediction(run_options.outputs_savefilepath, run_options.num_epochs, u_final_pred)            
         
         # Plotting
-        plot_Burgers(run_options, u_pred, Exact, x, t, X, T, X_star, lb, ub, u_star, X_u_train, x_data, t_data, u_train)
+        plot_Burgers(run_options, u_final_pred, Exact, x, t, X, T, X_star, lb, ub, u_star, X_u_train, x_data, t_data, u_train)
         
     
     

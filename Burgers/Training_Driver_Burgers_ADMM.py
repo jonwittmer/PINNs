@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Mon Sep 16 17:10:17 2019
+
+@author: hwan
+"""
+
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Sep 16 13:01:06 2019
 
 @author: Maziar Raissi
@@ -22,6 +30,7 @@ sys.path.insert(0, '../../Utilities/')
 
 from NN_PINNs_Burgers import PINN
 from load_data_burgers import load_data
+from numerical_integration import construct_trapezoidal_rule_scalar_multipliers
 from plotting_Burgers import plot_Burgers
 
 np.random.seed(1234)
@@ -36,14 +45,21 @@ class RunOptions:
     num_hidden_nodes  = 200
     N_train           = 100
     N_r               = 50 # for l1 norm
+    N_Int_x           = 100  # for L1 norm numerical integration
+    N_Int_t           = 100  # for L1 norm numerical integration
+    pen               = 10 # Penalty parameter for augmented Lagrangian
     num_batch         = 100
     num_epochs        = 11
     gpu               = '3'
 
     # Choose PDE
-    Burgers_Raissi = 0
-    Burgers_Abgrall = 1
-       
+    Burgers_Raissi = 1
+    Burgers_Abgrall = 0
+    
+    # Choose Regularization
+    PINNs_Regularization_l1 = 0
+    PINNs_Regularization_Trapezoidal = 1
+    
     # Setting Up File Names and Paths
     if Burgers_Raissi == 1:
         PDE = 'Raissi'
@@ -52,10 +68,16 @@ class RunOptions:
         PDE = 'Abgrall'
         nu = 0 # No second derivative
     
-    filename = 'Burgers_' + PDE + '_l2_hnodes%d_data%d_Nr%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_r,num_batch,num_epochs)
-        
-    figures_savefiledirectory = 'Figures/' + PDE + '/l2/'
-    outputs_savefiledirectory = 'Outputs/' + PDE + '/l2/'
+    if PINNs_Regularization_l1 == 1:
+        Regularization = 'l1'
+        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_r,num_batch,num_epochs)
+    
+    if PINNs_Regularization_Trapezoidal == 1:
+        Regularization = 'Trape'
+        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_Int_x,N_Int_t,num_batch,num_epochs)
+    
+    figures_savefiledirectory = 'Figures/' + PDE + '/ADMM/' + Regularization + '/'
+    outputs_savefiledirectory = 'Outputs/' + PDE + '/ADMM/' + Regularization + '/'
     
     figures_savefilepath = figures_savefiledirectory + filename
     outputs_savefilepath = outputs_savefiledirectory + filename
@@ -84,6 +106,21 @@ def save_prediction(savefilepath, epoch_num, u_pred):
     df = pd.DataFrame(data)
     df.to_csv(savefilepath + '.csv', mode='a', index=False)
     
+def compute_z():
+    val   = self.f_pred + self.gamma / self.rho
+
+    # annoying digital logic workaround to implement conditional.
+    # construct vectors of 1's and 0's that we can multiply
+    # by the proper value and sum together
+    cond1 = tf.where(tf.greater(val, self.c_gamma), self.ones, self.zeros)
+    cond3 = tf.where(tf.less(val, -1.0 * self.c_gamma), self.ones, self.zeros)
+    # cond2 is not needed since the complement of the intersection
+    # of (cond1 and cond3) is cond2 and already assigned to 0
+
+    dummy_z = cond1 * (val - self.c_gamma) + cond3 * (val + self.c_gamma)
+    
+    return dummy_z
+        
 ###############################################################################
 #                                  Driver                                     #
 ###############################################################################
@@ -102,9 +139,36 @@ if __name__ == "__main__":
     # Neural network
     NN = PINN(run_options, x_data.shape[1], t_data.shape[1], u_train.shape[1], lb, ub, run_options.nu)
     
+    # Initialize ADMM objects
+    z = tf.Variable(tf.ones([run_options.N_r, 1]), dtype=tf.float32, trainable=False)
+    gamma = tf.Variable(tf.ones([run_options.N_r, 1]), dtype=tf.float32, trainable=False)
+    pen = tf.constant(run_options.pen)
+    c_gamma = 1 / (pen * run_options.N_r)
+    zeros = tf.zeros((run_options.N_r, 1))
+    ones  = tf.ones((run_options.N_r, 1))    
+    gamma_update = gamma.assign(gamma + pen * (NN.r_pred - z))
+    z_update = z.assign(compute_z())
+
+    # ADMM loss term for training the weights - use backprop on this
+    loss = 1 / run_options.N_r * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
+                pen / 2 * tf.pow(tf.norm(NN.r_pred - z + gamma / pen, 2), 2)        
+    
     # Loss functional
-    loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-           1 / run_options.N_r * tf.pow(tf.norm(NN.r_pred, 2), 2)
+    epsilon = 1e-15
+    if run_options.PINNs_Regularization_l1 == 1:
+        trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
+        diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.r_pred + epsilon)))
+        loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
+               1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
+                    
+    if run_options.PINNs_Regularization_Trapezoidal == 1:
+        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x,NN.r_pred)
+        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t,r_pred_trapezoidal)
+        
+        # construct loss function
+        diag_entries = 1./(tf.math.sqrt(tf.math.abs(r_pred_trapezoidal + epsilon)))
+        loss_IRLS = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
+                         alpha * tf.pow(tf.norm(tf.multiply(diag_entries,r_pred_trapezoidal), 2), 2)
                 
     # Set optimizers
     optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
@@ -134,6 +198,9 @@ if __name__ == "__main__":
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables()) 
         
+        # assign the real initial value of z = r(w) 
+        sess.run(z.assign(NN.r_pred), feed_dict={NN.x_phys_tf: x_phys, NN.t_phys_tf: t_phys})
+        
         # initial batch of collocation points
         tf_dict = {NN.x_data_tf: x_data, NN.t_data_tf: t_data, NN.u_train_tf: u_train,
                    NN.x_phys_tf: x_phys, NN.t_phys_tf: t_phys}
@@ -141,7 +208,10 @@ if __name__ == "__main__":
         # main iterations: updating Lagrange multiplier
         start_time = time.time()
         it = 0
-        loss_value = 1000       
+        loss_value = 1000
+        
+        # store current weights to be updated later using IRLS
+        weights_current = NN.weights
 
         for epoch in range(run_options.num_epochs): 
             sess.run(train_op_Adam, tf_dict)                    
@@ -154,11 +224,14 @@ if __name__ == "__main__":
                 print('GPU: ' + run_options.gpu)
                 print('Epoch: %d, Loss: %.3e, Time: %.2f' %(epoch, loss_value, elapsed))
                 start_time = time.time()
-                            
+             
+            sess.run(z_update, tf_dict)
+            sess.run(gamma_update, tf_dict)   
+                
             # save figure every so often so if it crashes, we have some results
             if epoch % 10 == 0:
                 u_current_pred = NN_u_star_predict(NN, X_star)
-                save_prediction(run_options.outputs_savefilepath, epoch, u_current_pred)               
+                save_prediction(run_options.outputs_savefilepath, epoch, u_current_pred)  
             
             # new batch of collocation points
             x_phys = np.random.uniform(lb[0], ub[0], [run_options.N_r, 1])
@@ -170,14 +243,12 @@ if __name__ == "__main__":
         print('Optimizing with LBFGS\n')        
         #lbfgs.minimize(sess, feed_dict=tf_dict)    
         
-
-        
         ###############################
         #   Predictions and Plotting  #
         ################################    
         # Save final prediction
         u_final_pred = NN_u_star_predict(NN, X_star)
-        save_prediction(run_options.outputs_savefilepath, run_options.num_epochs, u_final_pred)             
+        save_prediction(run_options.outputs_savefilepath, run_options.num_epochs, u_final_pred) 
         
         # Plotting
         plot_Burgers(run_options, u_final_pred, Exact, x, t, X, T, X_star, lb, ub, u_star, X_u_train, x_data, t_data, u_train)
