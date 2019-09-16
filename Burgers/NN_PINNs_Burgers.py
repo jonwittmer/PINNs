@@ -13,9 +13,9 @@ import pdb #Equivalent of keyboard in MATLAB, just add "pdb.set_trace()"
 tf.set_random_seed(1234)
 
 class PINN:
-    def __init__(self, run_options, x_data_dimensions, t_data_dimensions, u_output_dimensions, lb, ub, nu, layers):
+    def __init__(self, run_options, x_data_dimensions, t_data_dimensions, u_output_dimensions, lb, ub, nu):
         
-        self.layers = layers
+        self.layers = [2] + [run_options.num_hidden_nodes]*run_options.num_hidden_layers + [1]
         self.nu = nu
         
         # placeholders for training data
@@ -40,8 +40,7 @@ class PINN:
         # Create data network and regularization network
         self.u_pred = self.net_u(self.x_data_tf, self.t_data_tf, lb, ub)
         self.r_pred = self.net_r(self.x_phys_tf, self.t_phys_tf, lb, ub)
-
-    
+   
     def xavier_init(self, size):
         in_dim = size[0]
         out_dim = size[1]

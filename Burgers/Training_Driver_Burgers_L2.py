@@ -22,7 +22,6 @@ sys.path.insert(0, '../../Utilities/')
 
 from NN_PINNs_Burgers import PINN
 from load_data_burgers import load_data
-from numerical_integration import construct_trapezoidal_rule_scalar_multipliers
 from plotting_Burgers import plot_Burgers
 
 np.random.seed(1234)
@@ -44,13 +43,9 @@ class RunOptions:
     gpu               = '3'
 
     # Choose PDE
-    Burgers_Raissi = 1
-    Burgers_Abgrall = 0
-    
-    # Choose Regularization
-    PINNs_Regularization_l1 = 1
-    PINNs_Regularization_Trapezoidal = 0
-    
+    Burgers_Raissi = 0
+    Burgers_Abgrall = 1
+       
     # Setting Up File Names and Paths
     if Burgers_Raissi == 1:
         PDE = 'Raissi'
@@ -59,16 +54,10 @@ class RunOptions:
         PDE = 'Abgrall'
         nu = 0 # No second derivative
     
-    if PINNs_Regularization_l1 == 1:
-        Regularization = 'l1'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_r,num_batch,num_epochs)
-    
-    if PINNs_Regularization_Trapezoidal == 1:
-        Regularization = 'Trape'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_Int_x,N_Int_t,num_batch,num_epochs)
-    
-    figures_savefiledirectory = 'Figures/' + PDE + '/IRLS/' + Regularization + '/'
-    outputs_savefiledirectory = 'Outputs/' + PDE + '/IRLS/' + Regularization + '/'
+    filename = 'Burgers_' + PDE + '_hnodes%d_data%d_Nr%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_r,num_batch,num_epochs)
+        
+    figures_savefiledirectory = 'Figures/' + PDE + '/IRLS/' + '/'
+    outputs_savefiledirectory = 'Outputs/' + PDE + '/IRLS/' + '/'
     
     figures_savefilepath = figures_savefiledirectory + filename
     outputs_savefilepath = outputs_savefiledirectory + filename
@@ -117,20 +106,7 @@ if __name__ == "__main__":
     NN = PINN(run_options, x_data.shape[1], t_data.shape[1], u_train.shape[1], lb, ub, run_options.nu)
     
     # Loss functional
-    epsilon = 1e-15
-    if run_options.PINNs_Regularization_l1 == 1:
-        trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
-        diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.r_pred + epsilon)))
-        loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-                    1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
-                    
-    if run_options.PINNs_Regularization_Trapezoidal == 1:
-        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x,NN.r_pred)
-        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t,r_pred_trapezoidal)
-        
-        # construct loss function
-        diag_entries = 1./(tf.math.sqrt(tf.math.abs(r_pred_trapezoidal + epsilon)))
-        loss_IRLS = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
+    loss_IRLS = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
                          alpha * tf.pow(tf.norm(tf.multiply(diag_entries,r_pred_trapezoidal), 2), 2)
                 
     # Set optimizers
