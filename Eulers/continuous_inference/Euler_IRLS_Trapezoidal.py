@@ -28,7 +28,7 @@ tf.set_random_seed(1234)
 
 
 class Parameters:
-    N_data    = 150
+    N_data = 150
     N_x    = 100
     N_t    = 100
     epochs = 50000
