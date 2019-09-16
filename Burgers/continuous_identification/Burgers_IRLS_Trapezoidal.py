@@ -266,8 +266,6 @@ class PhysicsInformedNN:
         self.trapezoidal_scalars_x = np.where(np.logical_or(abs(x_t_int[:,0] - self.lb[0]) < 1e-7, abs(x_t_int[:,0] - self.ub[0]) < 1e-7), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))
         self.trapezoidal_scalars_t = np.where(np.logical_or(abs(x_t_int[:,1] - self.lb[1]) < 1e-7, abs(x_t_int[:,1] - self.ub[1]) < 1e-7), np.ones(x_t_int.shape[0], dtype = np.float32), 2*np.ones(x_t_int.shape[0], dtype = np.float32))  
         self.alpha = (spatial_step_size*time_step_size)/4     
-         
-        pdb.set_trace()
         
     def run_NN(self):
         self.train(self.params.epochs)
