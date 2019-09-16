@@ -25,7 +25,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['OMP_NUM_THREADS'] = '6'
 sys.path.insert(0, '../../Utilities/')
 
-from NN_PINNs import PINNs
+from NN_PINNs import PINN
 
 np.random.seed(1234)
 tf.set_random_seed(1234)
@@ -34,16 +34,16 @@ tf.set_random_seed(1234)
 #                               Run Options                                   #
 ###############################################################################
 class RunOptions:
+    nu                = 0.0031831 # Burgers PDE parameter
     num_hidden_layers = 8
-    num_hidden_nodes = 200
-    N_train    = 100
-    N_r    = 5000 # for l1 norm
-    N_Int_x    = 100  # for L1 norm numerical integration
-    N_Int_t    = 100  # for L1 norm numerical integration
-    rho    = 40.0
-    num_batch = 100
-    num_epochs = 1e5
-    gpu    = '3'
+    num_hidden_nodes  = 200
+    N_train           = 100
+    N_r               = 50 # for l1 norm
+    N_Int_x           = 100  # for L1 norm numerical integration
+    N_Int_t           = 100  # for L1 norm numerical integration
+    num_batch         = 100
+    num_epochs        = 100
+    gpu               = '3'
 
     # Choose PDE
     Burgers_Raissi = 1
@@ -59,6 +59,7 @@ class RunOptions:
     
     if Burgers_Abgrall == 1:
         PDE = 'Abgrall'
+        nu = 0 # No second derivative
     
     if PINNs_Regularization_l1 == 1:
         Regularization = 'l1'
@@ -69,21 +70,26 @@ class RunOptions:
         filename = 'Burgers_' + PDE + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_Int_x,N_Int_t,num_batch,num_epochs)
     
     figures_savefilepath = 'Figures/' + PDE + '/' + filename
+    outputs_savefilepath = 'Outputs/' + PDE + '/' + filename
 
 ###############################################################################
 #                                  Functions                                  #
 ###############################################################################
-def record_data(self, epoch_num):
-    self.u_pred_val, self.f_pred_val = self.predict(self.X_star)
-    x = self.X_star[:, 0]
-    t = self.X_star[:, 1]
-    epoch = np.ones(len(x)) * epoch_num
-    data = {'x': x, 't': t, 'u_pred': self.u_pred_val[:,0], 'epoch': epoch}
-    self.df = pd.DataFrame(data)
-    
-def save_data(self):
-    self.df.to_csv(self.filename[:-3] + 'csv', mode='a', index=False)
+def NN_predict(NN, X_star):
+    tf_dict = {NN.x_data_tf: X_star[:, 0:1], NN.t_data_tf: X_star[:, 1:2],
+               NN.x_phys_tf: X_star[:, 0:1], NN.t_phys_tf: X_star[:, 1:2]}  
+    u_pred = sess.run(NN.forward_pred, tf_dict)  
+    r_pred = sess.run(NN.inverse_pred, tf_dict) 
+    return u_pred, r_pred
 
+def save_prediction(savefilepath, epoch_num, u_pred):
+    x = X_star[:, 0]
+    t = X_star[:, 1]
+    epoch = np.ones(len(x)) * epoch_num
+    data = {'x': x, 't': t, 'u_pred': u_pred[:,0], 'epoch': epoch}
+    df = pd.DataFrame(data)
+    df.to_csv(savefilepath + 'csv', mode='a', index=False)
+    
 ###############################################################################
 #                                  Driver                                     #
 ###############################################################################
@@ -91,10 +97,10 @@ if __name__ == "__main__":
     
     run_options = RunOptions()
     
-    #################
-    #   Load Data   #
-    #################
-    training_data = scipy.io.loadmat('../Data/burgers_shock.mat')
+    ############################
+    #   Load and Format Data   #
+    ############################
+    training_data = scipy.io.loadmat('Data/burgers_shock.mat')
     
     t = training_data['t'].flatten()[:, None]
     x = training_data['x'].flatten()[:, None]
@@ -123,7 +129,7 @@ if __name__ == "__main__":
     u_train = np.vstack([uu1, uu2, uu3]) 
     
     # Construct Training Data Sample
-    idx = np.random.choice(X_u_train.shape[0], run_options.N_data, replace=False) 
+    idx = np.random.choice(X_u_train.shape[0], run_options.N_train, replace=False) 
     X_u_train = X_u_train[idx, :]
     x_data = X_u_train[:, 0:1]
     t_data = X_u_train[:, 1:2]
@@ -139,11 +145,11 @@ if __name__ == "__main__":
     layers = [2] + [run_options.num_hidden_nodes]*run_options.num_hidden_layers + [1]
     
     # Neural network
-    NN = PINNs(run_options, X, layers)
+    NN = PINN(run_options, x_data.shape[1], t_data.shape[1], u_train.shape[1], lb, ub, run_options.nu, layers)
     
     # Loss functional
-    diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.f_pred)))
-    loss = 1 / run_options.N_train * tf.pow(tf.norm(NN.u - NN.u_pred, 2), 2) + \
+    diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.r_pred)))
+    loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
                 1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
                 
     # Set optimizers
@@ -200,9 +206,8 @@ if __name__ == "__main__":
                             
             # save figure every so often so if it crashes, we have some results
             if epoch % 10 == 0:
-                #self.plot_results()
-                record_data(it)
-                save_data()
+                u_pred, _ = NN_predict(NN, X_star)
+                save_prediction(run_options.outputs_savefilepath, epoch, u_pred)
                 
             # for iteratively reweighted least squares, the new weights are equal to the old weights plus the minimizer of the IRLS loss function    
             for l in range(0, len(NN.weights)): 
@@ -219,8 +224,9 @@ if __name__ == "__main__":
         print('Optimizing with LBFGS\n')        
         lbfgs.minimize(sess, feed_dict=tf_dict)    
         
-        record_data(run_options.num_epochs)
-        save_data()
+        # Save final prediction
+        u_pred, _ = NN_predict(NN, X_star)
+        save_prediction(run_options.outputs_savefilepath, run_options.num_epochs, u_pred)
         
 ###############################################################################
 #                                  Plotting                                   #
@@ -231,10 +237,10 @@ if __name__ == "__main__":
         # Predictions       
         tf_dict = {NN.x_data_tf: X_star[:, 0:1], NN.t_data_tf: X_star[:, 1:2],
                    NN.x_phys_tf: X_star[:, 0:1], NN.t_phys_tf: X_star[:, 1:2]}        
-        u_pred_val = sess.run(NN.u_pred, tf_dict)
+        u_pred = sess.run(NN.u_pred, tf_dict)
         f_pred_val = sess.run(NN.f_pred, tf_dict)                
         
-        U_pred = griddata(X_star, u_pred_val.flatten(), (X, T), method='cubic')
+        U_pred = griddata(X_star, u_pred.flatten(), (X, T), method='cubic')
         
         fig, ax = plt.subplots(figsize=(10, 10))
         ax.axis('off')
