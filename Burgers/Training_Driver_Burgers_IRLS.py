@@ -43,8 +43,8 @@ class RunOptions:
     gpu               = '0'
 
     # Choose PDE
-    Burgers_Raissi = 0
-    Burgers_Abgrall = 1
+    Burgers_Raissi = 1
+    Burgers_Abgrall = 0
     
     # Choose Regularization
     PINNs_Regularization_l1 = 1
