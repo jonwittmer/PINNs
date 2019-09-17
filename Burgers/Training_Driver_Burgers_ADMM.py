@@ -47,8 +47,7 @@ class RunOptions:
     N_r               = 50 # for l1 norm
     N_Int_x           = 100  # for L1 norm numerical integration
     N_Int_t           = 100  # for L1 norm numerical integration
-    pen               = 10 # Penalty parameter for augmented Lagrangian
-    num_batch         = 100
+    pen               = 10.0 # Penalty parameter for augmented Lagrangian, needs to be float32
     num_epochs        = 11
     gpu               = '3'
 
@@ -57,8 +56,8 @@ class RunOptions:
     Burgers_Abgrall = 0
     
     # Choose Regularization
-    PINNs_Regularization_l1 = 0
-    PINNs_Regularization_Trapezoidal = 1
+    PINNs_Regularization_l1 = 1
+    PINNs_Regularization_Trapezoidal = 0 # Not yet coded
     
     # Setting Up File Names and Paths
     if Burgers_Raissi == 1:
@@ -70,11 +69,12 @@ class RunOptions:
     
     if PINNs_Regularization_l1 == 1:
         Regularization = 'l1'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_r,num_batch,num_epochs)
+        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
     
     if PINNs_Regularization_Trapezoidal == 1:
+        N_r = N_Int_x*N_Int_t
         Regularization = 'Trape'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_Int_x,N_Int_t,num_batch,num_epochs)
+        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_epochs%d' %(num_hidden_nodes, N_train, N_Int_x, N_Int_t, num_epochs)
     
     figures_savefiledirectory = 'Figures/' + PDE + '/ADMM/' + Regularization + '/'
     outputs_savefiledirectory = 'Outputs/' + PDE + '/ADMM/' + Regularization + '/'
@@ -106,18 +106,18 @@ def save_prediction(savefilepath, epoch_num, u_pred):
     df = pd.DataFrame(data)
     df.to_csv(savefilepath + '.csv', mode='a', index=False)
     
-def compute_z():
-    val   = self.f_pred + self.gamma / self.rho
+def compute_z(r_pred, alpha, pen):
+    val = r_pred + lagrange / pen
 
     # annoying digital logic workaround to implement conditional.
     # construct vectors of 1's and 0's that we can multiply
     # by the proper value and sum together
-    cond1 = tf.where(tf.greater(val, self.c_gamma), self.ones, self.zeros)
-    cond3 = tf.where(tf.less(val, -1.0 * self.c_gamma), self.ones, self.zeros)
+    cond1 = tf.where(tf.greater(val, alpha/pen), ones, zeros)
+    cond3 = tf.where(tf.less(val, - 1.0 * alpha/pen), ones, zeros)
     # cond2 is not needed since the complement of the intersection
     # of (cond1 and cond3) is cond2 and already assigned to 0
 
-    dummy_z = cond1 * (val - self.c_gamma) + cond3 * (val + self.c_gamma)
+    dummy_z = cond1 * (val - alpha/pen) + cond3 * (val + alpha/pen)
     
     return dummy_z
         
@@ -141,34 +141,26 @@ if __name__ == "__main__":
     
     # Initialize ADMM objects
     z = tf.Variable(tf.ones([run_options.N_r, 1]), dtype=tf.float32, trainable=False)
-    gamma = tf.Variable(tf.ones([run_options.N_r, 1]), dtype=tf.float32, trainable=False)
+    lagrange = tf.Variable(tf.ones([run_options.N_r, 1]), dtype=tf.float32, trainable=False)
     pen = tf.constant(run_options.pen)
-    c_gamma = 1 / (pen * run_options.N_r)
+    alpha = 1/run_options.N_r # replaced below for trapezoidal rule
     zeros = tf.zeros((run_options.N_r, 1))
-    ones  = tf.ones((run_options.N_r, 1))    
-    gamma_update = gamma.assign(gamma + pen * (NN.r_pred - z))
-    z_update = z.assign(compute_z())
-
-    # ADMM loss term for training the weights - use backprop on this
-    loss = 1 / run_options.N_r * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-                pen / 2 * tf.pow(tf.norm(NN.r_pred - z + gamma / pen, 2), 2)        
+    ones  = tf.ones((run_options.N_r, 1))   
+    lagrange_update = lagrange.assign(lagrange + pen * (NN.r_pred - z))
+    z_update = z.assign(compute_z(NN.r_pred, alpha, pen))
     
     # Loss functional
     epsilon = 1e-15
     if run_options.PINNs_Regularization_l1 == 1:
-        trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
-        diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.r_pred + epsilon)))
-        loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-               1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
+        loss = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
+                               pen/2 * tf.pow(tf.norm(NN.r_pred - z + lagrange/pen, 2), 2)
                     
     if run_options.PINNs_Regularization_Trapezoidal == 1:
-        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x,NN.r_pred)
-        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t,r_pred_trapezoidal)
-        
-        # construct loss function
-        diag_entries = 1./(tf.math.sqrt(tf.math.abs(r_pred_trapezoidal + epsilon)))
-        loss_IRLS = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-                         alpha * tf.pow(tf.norm(tf.multiply(diag_entries,r_pred_trapezoidal), 2), 2)
+        trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
+        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x, NN.r_pred)
+        r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t, r_pred_trapezoidal)        
+        loss = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
+                               pen/2 * tf.pow(tf.norm(r_pred_trapezoidal - z + lagrange/pen, 2), 2)
                 
     # Set optimizers
     optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
@@ -207,7 +199,6 @@ if __name__ == "__main__":
                 
         # main iterations: updating Lagrange multiplier
         start_time = time.time()
-        it = 0
         loss_value = 1000
         
         # store current weights to be updated later using IRLS
@@ -226,7 +217,7 @@ if __name__ == "__main__":
                 start_time = time.time()
              
             sess.run(z_update, tf_dict)
-            sess.run(gamma_update, tf_dict)   
+            sess.run(lagrange_update, tf_dict)   
                 
             # save figure every so often so if it crashes, we have some results
             if epoch % 10 == 0:

@@ -36,7 +36,6 @@ class RunOptions:
     num_hidden_nodes  = 200
     N_train           = 100
     N_r               = 50 # for l1 norm
-    num_batch         = 100
     num_epochs        = 11
     gpu               = '3'
 
@@ -52,7 +51,7 @@ class RunOptions:
         PDE = 'Abgrall'
         nu = 0 # No second derivative
     
-    filename = 'Burgers_' + PDE + '_l2_hnodes%d_data%d_Nr%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_r,num_batch,num_epochs)
+    filename = 'Burgers_' + PDE + '_l2_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
         
     figures_savefiledirectory = 'Figures/' + PDE + '/l2/'
     outputs_savefiledirectory = 'Outputs/' + PDE + '/l2/'
@@ -140,7 +139,6 @@ if __name__ == "__main__":
                 
         # main iterations: updating Lagrange multiplier
         start_time = time.time()
-        it = 0
         loss_value = 1000       
 
         for epoch in range(run_options.num_epochs): 

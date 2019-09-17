@@ -39,7 +39,6 @@ class RunOptions:
     N_r               = 50 # for l1 norm
     N_Int_x           = 10  # for L1 norm numerical integration
     N_Int_t           = 10  # for L1 norm numerical integration
-    num_batch         = 100
     num_epochs        = 11
     gpu               = '3'
 
@@ -61,11 +60,11 @@ class RunOptions:
     
     if PINNs_Regularization_l1 == 1:
         Regularization = 'l1'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_r,num_batch,num_epochs)
+        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
     
     if PINNs_Regularization_Trapezoidal == 1:
         Regularization = 'Trape'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_batch%d_epochs%d' %(num_hidden_nodes,N_train,N_Int_x,N_Int_t,num_batch,num_epochs)
+        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_epochs%d' %(num_hidden_nodes, N_train, N_Int_x, N_Int_t, num_epochs)
     
     figures_savefiledirectory = 'Figures/' + PDE + '/IRLS/' + Regularization + '/'
     outputs_savefiledirectory = 'Outputs/' + PDE + '/IRLS/' + Regularization + '/'
@@ -120,7 +119,7 @@ if __name__ == "__main__":
     if run_options.PINNs_Regularization_l1 == 1:
         diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.r_pred + epsilon)))
         loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-               1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
+               1 / run_options.N_r * tf.pow(tf.norm(tf.multiply(diag_entries, NN.r_pred), 2), 2)
                     
     if run_options.PINNs_Regularization_Trapezoidal == 1:
         trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
@@ -128,7 +127,7 @@ if __name__ == "__main__":
         r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t, r_pred_trapezoidal)
         diag_entries = 1./(tf.math.sqrt(tf.math.abs(r_pred_trapezoidal + epsilon)))
         loss = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
-                         alpha * tf.pow(tf.norm(tf.multiply(diag_entries,r_pred_trapezoidal), 2), 2)
+                               alpha * tf.pow(tf.norm(tf.multiply(diag_entries, r_pred_trapezoidal), 2), 2)
                 
     # Set optimizers
     optimizer_Adam = tf.train.AdamOptimizer(learning_rate=0.001)
@@ -164,7 +163,6 @@ if __name__ == "__main__":
                 
         # main iterations: updating Lagrange multiplier
         start_time = time.time()
-        it = 0
         loss_value = 1000
         
         # store current weights to be updated later using IRLS
