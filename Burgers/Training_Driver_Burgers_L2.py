@@ -37,7 +37,7 @@ class RunOptions:
     N_train           = 100
     N_r               = 5000 # for l1 norm
     num_epochs        = 50000
-    gpu               = '2'
+    gpu               = '3'
 
     # Choose PDE
     Burgers_Raissi = 0
