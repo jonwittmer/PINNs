@@ -69,12 +69,12 @@ class RunOptions:
     
     if PINNs_Regularization_l1 == 1:
         Regularization = 'l1'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
+        filename = 'Burgers_' + PDE + '_ADMM_' + Regularization + '_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
     
     if PINNs_Regularization_Trapezoidal == 1:
         N_r = N_Int_x*N_Int_t
         Regularization = 'Trape'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_epochs%d' %(num_hidden_nodes, N_train, N_Int_x, N_Int_t, num_epochs)
+        filename = 'Burgers_' + PDE + '_ADMM_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_epochs%d' %(num_hidden_nodes, N_train, N_Int_x, N_Int_t, num_epochs)
     
     figures_savefiledirectory = 'Figures/' + PDE + '/ADMM/' + Regularization + '/'
     outputs_savefiledirectory = 'Outputs/' + PDE + '/ADMM/' + Regularization + '/'

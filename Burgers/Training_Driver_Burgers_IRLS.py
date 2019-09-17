@@ -60,14 +60,14 @@ class RunOptions:
     
     if PINNs_Regularization_l1 == 1:
         Regularization = 'l1'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
+        filename = 'Burgers_' + PDE + '_IRLS_' + Regularization + '_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
     
     if PINNs_Regularization_Trapezoidal == 1:
         Regularization = 'Trape'
-        filename = 'Burgers_' + PDE + '_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_epochs%d' %(num_hidden_nodes, N_train, N_Int_x, N_Int_t, num_epochs)
+        filename = 'Burgers_' + PDE + '_IRLS_' + Regularization + '_hnodes%d_data%d_Nx%d_Nt%d_epochs%d' %(num_hidden_nodes, N_train, N_Int_x, N_Int_t, num_epochs)
     
-    figures_savefiledirectory = 'Figures/' + PDE + '/IRLS/' + Regularization + '/'
-    outputs_savefiledirectory = 'Outputs/' + PDE + '/IRLS/' + Regularization + '/'
+    figures_savefiledirectory = 'Figures/' + PDE + '/'
+    outputs_savefiledirectory = 'Outputs/' + PDE + '/'
     
     figures_savefilepath = figures_savefiledirectory + filename
     outputs_savefilepath = outputs_savefiledirectory + filename
