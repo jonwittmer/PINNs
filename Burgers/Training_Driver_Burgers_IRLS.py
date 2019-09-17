@@ -47,8 +47,8 @@ class RunOptions:
     Burgers_Abgrall = 1
     
     # Choose Regularization
-    PINNs_Regularization_l1 = 0
-    PINNs_Regularization_Trapezoidal = 1
+    PINNs_Regularization_l1 = 1
+    PINNs_Regularization_Trapezoidal = 0
     
     # Setting Up File Names and Paths
     if Burgers_Raissi == 1:
