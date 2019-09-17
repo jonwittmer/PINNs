@@ -42,14 +42,14 @@ tf.set_random_seed(1234)
 class RunOptions:
     nu                = 0.0031831 # Burgers PDE parameter
     num_hidden_layers = 8
-    num_hidden_nodes  = 200
+    num_hidden_nodes  = 20
     N_train           = 100
-    N_r               = 50 # for l1 norm
+    N_r               = 5000 # for l1 norm
     N_Int_x           = 100  # for L1 norm numerical integration
     N_Int_t           = 100  # for L1 norm numerical integration
     pen               = 10.0 # Penalty parameter for augmented Lagrangian, needs to be float32
-    num_epochs        = 11
-    gpu               = '3'
+    num_epochs        = 50000
+    gpu               = '1'
 
     # Choose PDE
     Burgers_Raissi = 1
@@ -232,7 +232,7 @@ if __name__ == "__main__":
         
         # Optimize with LBFGS
         print('Optimizing with LBFGS\n')        
-        #lbfgs.minimize(sess, feed_dict=tf_dict)    
+        lbfgs.minimize(sess, feed_dict=tf_dict)    
         
         ###############################
         #   Predictions and Plotting  #
@@ -240,6 +240,7 @@ if __name__ == "__main__":
         # Save final prediction
         u_final_pred = NN_u_star_predict(NN, X_star)
         save_prediction(run_options.outputs_savefilepath, run_options.num_epochs, u_final_pred) 
+        print('Final Prediction Saved\n') 
         
         # Plotting
         plot_Burgers(run_options, u_final_pred, Exact, x, t, X, T, X_star, lb, ub, u_star, X_u_train, x_data, t_data, u_train)

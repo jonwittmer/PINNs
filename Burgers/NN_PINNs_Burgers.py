@@ -37,7 +37,7 @@ class PINN:
             self.weights.append(W)
             self.biases.append(b)
         
-        # Create data network and regularization network
+        # Data network and regularization network forward propagation
         self.u_pred = self.net_u(self.x_data_tf, self.t_data_tf, lb, ub)
         self.r_pred = self.net_r(self.x_phys_tf, self.t_phys_tf, lb, ub)
    
