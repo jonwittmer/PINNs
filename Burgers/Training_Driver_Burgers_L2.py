@@ -145,7 +145,7 @@ if __name__ == "__main__":
             sess.run(train_op_Adam, tf_dict)                    
 
             # print to monitor results
-            if epoch % 10 == 0:
+            if epoch % 100 == 0:
                 elapsed = time.time() - start_time
                 loss_value = sess.run(loss, tf_dict)
                 print(run_options.filename)
@@ -154,7 +154,7 @@ if __name__ == "__main__":
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
-            if epoch % 10 == 0:
+            if epoch % 1000 == 0:
                 u_current_pred = NN_u_star_predict(NN, X_star)
                 save_prediction(run_options.outputs_savefilepath, epoch, u_current_pred)               
             
