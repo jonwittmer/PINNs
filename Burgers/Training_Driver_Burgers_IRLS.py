@@ -177,11 +177,12 @@ if __name__ == "__main__":
                 loss_value = sess.run(loss, tf_dict)
                 print(run_options.filename)
                 print('GPU: ' + run_options.gpu)
-                print('Epoch: %d, Loss: %.3e, Time: %.2f' %(epoch, loss_value, elapsed))
+                print('Epoch: %d, Loss: %.3e, Time: %.2f\n' %(epoch, loss_value, elapsed))
                 start_time = time.time()
                             
             # save figure every so often so if it crashes, we have some results
             if epoch % 1000 == 0:
+                print('Saving Current Prediction')
                 u_current_pred = NN_u_star_predict(NN, X_star)
                 save_prediction(run_options.outputs_savefilepath, epoch, u_current_pred)         
                 
