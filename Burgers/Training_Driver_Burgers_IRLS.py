@@ -34,11 +34,11 @@ tf.set_random_seed(1234)
 class RunOptions:
     nu                = 0.0031831 # Burgers PDE parameter
     num_hidden_layers = 8
-    num_hidden_nodes  = 200
+    num_hidden_nodes  = 20
     N_train           = 100
     N_r               = 50 # for l1 norm
-    N_Int_x           = 100  # for L1 norm numerical integration
-    N_Int_t           = 100  # for L1 norm numerical integration
+    N_Int_x           = 10  # for L1 norm numerical integration
+    N_Int_t           = 10  # for L1 norm numerical integration
     num_batch         = 100
     num_epochs        = 11
     gpu               = '3'
@@ -48,8 +48,8 @@ class RunOptions:
     Burgers_Abgrall = 1
     
     # Choose Regularization
-    PINNs_Regularization_l1 = 1
-    PINNs_Regularization_Trapezoidal = 0
+    PINNs_Regularization_l1 = 0
+    PINNs_Regularization_Trapezoidal = 1
     
     # Setting Up File Names and Paths
     if Burgers_Raissi == 1:
@@ -118,16 +118,16 @@ if __name__ == "__main__":
     # Loss functional
     epsilon = 1e-15
     if run_options.PINNs_Regularization_l1 == 1:
-        trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
         diag_entries = 1./(tf.math.sqrt(tf.math.abs(NN.r_pred + epsilon)))
         loss = 1 / run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
                1 / run_options.N_r * tf.pow(tf.norm(tf.diag(diag_entries)*NN.r_pred, 2), 2)
                     
     if run_options.PINNs_Regularization_Trapezoidal == 1:
+        trapezoidal_scalars_x, trapezoidal_scalars_t, alpha, x_phys, t_phys = construct_trapezoidal_rule_scalar_multipliers(run_options.N_Int_x, run_options.N_Int_t, ub, lb)
         r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_x, NN.r_pred)
         r_pred_trapezoidal = tf.multiply(trapezoidal_scalars_t, r_pred_trapezoidal)
         diag_entries = 1./(tf.math.sqrt(tf.math.abs(r_pred_trapezoidal + epsilon)))
-        loss_IRLS = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
+        loss = 1/run_options.N_train * tf.pow(tf.norm(u_train - NN.u_pred, 2), 2) + \
                          alpha * tf.pow(tf.norm(tf.multiply(diag_entries,r_pred_trapezoidal), 2), 2)
                 
     # Set optimizers
