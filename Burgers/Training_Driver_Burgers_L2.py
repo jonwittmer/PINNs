@@ -53,8 +53,8 @@ class RunOptions:
     
     filename = 'Burgers_' + PDE + '_l2_hnodes%d_data%d_Nr%d_epochs%d' %(num_hidden_nodes, N_train, N_r, num_epochs)
         
-    figures_savefiledirectory = 'Figures/' + PDE + '/l2/'
-    outputs_savefiledirectory = 'Outputs/' + PDE + '/l2/'
+    figures_savefiledirectory = 'Figures/' + PDE + '/'
+    outputs_savefiledirectory = 'Outputs/' + PDE + '/'
     
     figures_savefilepath = figures_savefiledirectory + filename
     outputs_savefilepath = outputs_savefiledirectory + filename
