@@ -157,7 +157,7 @@ class PhysicsInformedNN:
         for l in range(0, num_layers - 2):
             W = weights[l]
             b = biases[l]
-            H = tf.tanh(tf.add(tf.matmul(H, W), b))
+            H = tf.math.sin(tf.add(tf.matmul(H, W), b)) # tf.tanh
         W = weights[-1]
         b = biases[-1]
         Y = tf.add(tf.matmul(H, W), b)
